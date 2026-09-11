@@ -5,6 +5,7 @@
 
 (function () {
   const STORAGE_KEY = 'englisify-theme'; // 'light' | 'dark' | 'system'
+  const VALID_THEMES = new Set(['light', 'dark', 'system']);
 
   function systemPrefersDark() {
     return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -19,10 +20,12 @@
   }
 
   function getStoredTheme() {
-    return localStorage.getItem(STORAGE_KEY) || 'light';
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return VALID_THEMES.has(stored) ? stored : 'light';
   }
 
   function setTheme(mode) {
+    if (!VALID_THEMES.has(mode)) return;
     localStorage.setItem(STORAGE_KEY, mode);
     applyTheme(mode);
   }

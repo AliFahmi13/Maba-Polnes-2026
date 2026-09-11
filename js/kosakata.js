@@ -21,6 +21,16 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentFilter = 'semua';
   let searchTerm = '';
 
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>'"]/g, (character) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      "'": '&#39;',
+      '"': '&quot;',
+    }[character]));
+  }
+
   const tbody = document.getElementById('vocabBody');
   const searchInput = document.getElementById('vocabSearch');
 
@@ -46,18 +56,22 @@ document.addEventListener('DOMContentLoaded', () => {
     tbody.innerHTML = rows.map((v, i) => {
       const realIndex = vocab.indexOf(v);
       const dueClass = v.status === 'review' ? 'due-soon' : '';
+      const word = escapeHtml(v.word);
+      const meaning = escapeHtml(v.meaning);
+      const last = escapeHtml(v.last);
+      const next = escapeHtml(v.next);
       return `
       <tr>
         <td>
           <div class="word-cell">
-            <button class="icon-toggle" data-speak="${v.word}" title="Putar pelafalan">${iconAudio()}</button>
-            ${v.word}
+            <button class="icon-toggle" data-speak="${word}" title="Putar pelafalan">${iconAudio()}</button>
+            ${word}
           </div>
         </td>
-        <td>${v.meaning}</td>
+        <td>${meaning}</td>
         <td><span class="tag ${v.type}">${typeLabels[v.type]}</span></td>
-        <td>${v.last}</td>
-        <td class="${dueClass}">${v.next}</td>
+        <td>${last}</td>
+        <td class="${dueClass}">${next}</td>
         <td>
           <div class="row-menu">
             <button class="menu-btn" data-menu="${realIndex}">${iconMore()}</button>
