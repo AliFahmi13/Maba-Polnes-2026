@@ -3,14 +3,7 @@
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
-  const levels = [
-    { code: 'A1', name: 'Pemula', desc: 'Belajar kosakata dan kalimat dasar.', state: 'done' },
-    { code: 'A2', name: 'Dasar', desc: 'Mulai memahami percakapan sederhana.', state: 'done' },
-    { code: 'B1', name: 'Menengah', desc: 'Memahami percakapan dan teks sehari-hari.', state: 'current' },
-    { code: 'B2', name: 'Menengah Atas', desc: 'Berkomunikasi dengan lebih lancar.', state: 'locked' },
-    { code: 'C1', name: 'Mahir', desc: 'Memahami bahasa Inggris kompleks.', state: 'locked' },
-    { code: 'C2', name: 'Master', desc: 'Penguasaan bahasa Inggris tingkat tinggi.', state: 'locked' },
-  ];
+  const levels = window.Englisify.levels;
 
   const examMeta = {
     A1: { total: 20, time: '± 12 menit', pass: 60, next: 'A2' },
@@ -29,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     { category: 'Membaca', q: 'Bacaan tentang beradaptasi di kota baru menyarankan sikap...', options: ['Terburu-buru', 'Sabar', 'Cuek', 'Malas'], correct: 1 },
     { category: 'Membaca', q: 'Salah satu cara beradaptasi menurut bacaan adalah...', options: ['Bertemu orang baru', 'Menutup diri', 'Diam di kamar', 'Menghindari rutinitas'], correct: 0 },
   ];
+  const escapeHtml = window.Englisify.escapeHtml;
 
   let activeLevel = 'B1';
   let current = 0;
@@ -123,12 +117,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const examCard = document.getElementById('examCard');
     examCard.innerHTML = `
-      <span class="tag" style="margin-bottom:14px;display:inline-block;">${item.category}</span>
-      <div class="q-title">${item.q}</div>
+      <span class="tag" style="margin-bottom:14px;display:inline-block;">${escapeHtml(item.category)}</span>
+      <div class="q-title">${escapeHtml(item.q)}</div>
       <div class="option-list" id="examOptList">
         ${item.options.map((opt, i) => `
           <div class="option" data-idx="${i}">
-            <span class="radio"></span><span>${opt}</span>
+            <span class="radio"></span><span>${escapeHtml(opt)}</span>
           </div>`).join('')}
       </div>
       <button class="btn btn-primary mt-4" id="examAction" disabled>Jawab</button>

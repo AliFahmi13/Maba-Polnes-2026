@@ -7,14 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ------------------------------------------------------------------
      Level metadata — konsisten dengan Beranda, Ujian Level & Flashcard.
      ------------------------------------------------------------------ */
-  const LEVELS = [
-    { code: 'A1', name: 'Pemula', desc: 'Kosakata dasar & kalimat sederhana.', state: 'done' },
-    { code: 'A2', name: 'Dasar', desc: 'Bahasa Inggris sehari-hari & ekspresi umum.', state: 'done' },
-    { code: 'B1', name: 'Menengah', desc: 'Memahami percakapan dan teks sehari-hari.', state: 'current' },
-    { code: 'B2', name: 'Menengah Atas', desc: 'Berkomunikasi dengan lebih lancar.', state: 'locked' },
-    { code: 'C1', name: 'Mahir', desc: 'Memahami bahasa Inggris kompleks.', state: 'locked' },
-    { code: 'C2', name: 'Master', desc: 'Penguasaan bahasa Inggris tingkat tinggi.', state: 'locked' },
-  ];
+  const LEVELS = window.Englisify.levels;
 
   /* ------------------------------------------------------------------
      Bank bacaan per level. `correctAnswer` disimpan sebagai TEKS jawaban
@@ -99,6 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const LEVEL_LABELS = { A1: 'Pemula', A2: 'Dasar', B1: 'Menengah', B2: 'Menengah Atas', C1: 'Mahir', C2: 'Master' };
+  const escapeHtml = window.Englisify.escapeHtml;
 
   /* ------------------------------------------------------------------
      Util: Fisher-Yates shuffle yang TIDAK memutasi array asli.
@@ -226,7 +220,11 @@ document.addEventListener('DOMContentLoaded', () => {
     resetVisibility();
 
     passageTitle.textContent = levelData.title;
-    passageBody.innerHTML = levelData.paragraphs.map((p) => '<p>' + p + '</p>').join('');
+    passageBody.replaceChildren(...levelData.paragraphs.map((paragraph) => {
+      const element = document.createElement('p');
+      element.textContent = paragraph;
+      return element;
+    }));
 
     // Bangun sesi baru: urutan soal & opsi diacak, data asli tetap utuh.
     sessionQuestions = buildSession(levelData);
@@ -240,10 +238,10 @@ document.addEventListener('DOMContentLoaded', () => {
     answered = false;
 
     quizStage.innerHTML =
-      '<div class="q-title">' + (current + 1) + '. ' + item.q + '</div>' +
+      '<div class="q-title">' + (current + 1) + '. ' + escapeHtml(item.q) + '</div>' +
       '<div class="option-list" id="optList">' +
         item.options.map((opt, i) =>
-          '<div class="option" data-idx="' + i + '"><span class="radio"></span><span>' + opt.text + '</span></div>'
+          '<div class="option" data-idx="' + i + '"><span class="radio"></span><span>' + escapeHtml(opt.text) + '</span></div>'
         ).join('') +
       '</div>' +
       '<div class="q-feedback" id="qFeedback"></div>' +

@@ -14,12 +14,21 @@
   }
 
   function getStoredTheme() {
-    return localStorage.getItem(STORAGE_KEY) || 'light';
+    try {
+      return localStorage.getItem(STORAGE_KEY) === 'dark' ? 'dark' : 'light';
+    } catch (error) {
+      return 'light';
+    }
   }
 
   function setTheme(mode) {
-    localStorage.setItem(STORAGE_KEY, mode);
-    applyTheme(mode);
+    const safeMode = mode === 'dark' ? 'dark' : 'light';
+    try {
+      localStorage.setItem(STORAGE_KEY, safeMode);
+    } catch (error) {
+      // Private browsing or disabled storage should not break the UI.
+    }
+    applyTheme(safeMode);
   }
 
   // Apply immediately (before paint as much as possible)
@@ -57,6 +66,23 @@
 
   // Small reusable toast helper, available globally
   window.Englisify = window.Englisify || {};
+  window.Englisify.levels = [
+    { code: 'A1', name: 'Pemula', desc: 'Kosakata dasar & kalimat sederhana.', state: 'done' },
+    { code: 'A2', name: 'Dasar', desc: 'Bahasa Inggris sehari-hari & ekspresi umum.', state: 'done' },
+    { code: 'B1', name: 'Menengah', desc: 'Memahami percakapan dan teks sehari-hari.', state: 'current' },
+    { code: 'B2', name: 'Menengah Atas', desc: 'Berkomunikasi dengan lebih lancar.', state: 'locked' },
+    { code: 'C1', name: 'Mahir', desc: 'Memahami bahasa Inggris kompleks.', state: 'locked' },
+    { code: 'C2', name: 'Master', desc: 'Penguasaan bahasa Inggris tingkat tinggi.', state: 'locked' },
+  ];
+  window.Englisify.escapeHtml = function (value) {
+    return String(value).replace(/[&<>"']/g, (character) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    }[character]));
+  };
   window.Englisify.toast = function (message) {
     let toast = document.querySelector('.toast');
     if (!toast) {

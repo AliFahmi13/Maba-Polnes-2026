@@ -21,15 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentFilter = 'semua';
   let searchTerm = '';
 
-  function escapeHtml(value) {
-    return String(value).replace(/[&<>'"]/g, (character) => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      "'": '&#39;',
-      '"': '&quot;',
-    }[character]));
-  }
+  const escapeHtml = window.Englisify.escapeHtml;
 
   const tbody = document.getElementById('vocabBody');
   const searchInput = document.getElementById('vocabSearch');
@@ -56,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tbody.innerHTML = rows.map((v, i) => {
       const realIndex = vocab.indexOf(v);
       const dueClass = v.status === 'review' ? 'due-soon' : '';
+      const type = Object.prototype.hasOwnProperty.call(typeLabels, v.type) ? v.type : 'noun';
       const word = escapeHtml(v.word);
       const meaning = escapeHtml(v.meaning);
       const last = escapeHtml(v.last);
@@ -69,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </td>
         <td>${meaning}</td>
-        <td><span class="tag ${v.type}">${typeLabels[v.type]}</span></td>
+        <td><span class="tag ${type}">${typeLabels[type]}</span></td>
         <td>${last}</td>
         <td class="${dueClass}">${next}</td>
         <td>
@@ -94,31 +87,33 @@ document.addEventListener('DOMContentLoaded', () => {
       </tr>`;
     }).join('');
 
-    // Wire up per-row controls
-    tbody.querySelectorAll('[data-speak]').forEach((btn) => {
-      btn.addEventListener('click', () => {
+    // One listener handles all current and future rows.
+    tbody.onclick = (event) => {
+      const btn = event.target.closest('button');
+      if (!btn || !tbody.contains(btn)) return;
+
+      if (btn.hasAttribute('data-speak')) {
         try {
           const u = new SpeechSynthesisUtterance(btn.dataset.speak);
           u.lang = 'en-US';
           window.speechSynthesis.cancel();
           window.speechSynthesis.speak(u);
         } catch (e) { /* no-op */ }
-      });
-    });
+        return;
+      }
 
-    tbody.querySelectorAll('.menu-btn').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
+      if (btn.classList.contains('menu-btn')) {
         const dd = tbody.querySelector(`[data-dropdown="${btn.dataset.menu}"]`);
+        if (!dd) return;
         const wasOpen = dd.classList.contains('open');
         tbody.querySelectorAll('.dropdown.open').forEach((d) => d.classList.remove('open'));
         if (!wasOpen) dd.classList.add('open');
-      });
-    });
+        return;
+      }
 
-    tbody.querySelectorAll('[data-action]').forEach((btn) => {
-      btn.addEventListener('click', () => {
+      if (btn.hasAttribute('data-action')) {
         const idx = Number(btn.dataset.idx);
+        if (!Number.isInteger(idx) || !vocab[idx]) return;
         const action = btn.dataset.action;
         if (action === 'review') {
           window.location.href = 'flashcard.html';
@@ -133,8 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
           window.Englisify.toast(`"${removed}" dihapus dari daftar kosakata`);
           render();
         }
-      });
-    });
+      }
+    };
   }
 
   // Tabs

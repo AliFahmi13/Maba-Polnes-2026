@@ -8,14 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
      Level metadata — konsisten dengan Beranda & Ujian Level.
      state: 'done' | 'current' | 'locked'
      ------------------------------------------------------------------ */
-  const LEVELS = [
-    { code: 'A1', name: 'Pemula', desc: 'Kosakata dasar & kalimat sederhana.', state: 'done' },
-    { code: 'A2', name: 'Dasar', desc: 'Bahasa Inggris sehari-hari & ekspresi umum.', state: 'done' },
-    { code: 'B1', name: 'Menengah', desc: 'Memahami percakapan dan teks sehari-hari.', state: 'current' },
-    { code: 'B2', name: 'Menengah Atas', desc: 'Berkomunikasi dengan lebih lancar.', state: 'locked' },
-    { code: 'C1', name: 'Mahir', desc: 'Memahami bahasa Inggris kompleks.', state: 'locked' },
-    { code: 'C2', name: 'Master', desc: 'Penguasaan bahasa Inggris tingkat tinggi.', state: 'locked' },
-  ];
+  const LEVELS = window.Englisify.levels;
 
   /* ------------------------------------------------------------------
      Bank kata per level — TIDAK PERNAH dimutasi langsung.

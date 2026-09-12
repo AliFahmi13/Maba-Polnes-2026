@@ -3,14 +3,7 @@
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
-  const levels = [
-    { code: 'A1', name: 'Pemula', state: 'done' },
-    { code: 'A2', name: 'Dasar', state: 'done' },
-    { code: 'B1', name: 'Menengah', state: 'current' },
-    { code: 'B2', name: 'Menengah Atas', state: 'locked' },
-    { code: 'C1', name: 'Mahir', state: 'locked' },
-    { code: 'C2', name: 'Master', state: 'locked' },
-  ];
+  const levels = window.Englisify.levels;
 
   const checkIcon = `<svg class="icon" viewBox="0 0 24 24" stroke="#12b76a"><path d="M20 6 9 17l-5-5"/></svg>`;
   const lockIcon = `<svg class="icon" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>`;
@@ -50,7 +43,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       // Remember which level was picked, then head to the exam hub
-      localStorage.setItem('englisify-selected-level', code);
+      try {
+        localStorage.setItem('englisify-selected-level', code);
+      } catch (error) {
+        // Navigation still works when browser storage is unavailable.
+      }
       window.location.href = 'ujian-level.html';
     });
   });
