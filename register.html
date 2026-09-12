@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self';">
+<title>Daftar — Englisify</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="js/auth.js" data-guard="guest"></script>
+</head>
+<body>
+
+<div class="auth-page">
+
+  <div class="auth-visual">
+    <div class="auth-visual-inner">
+      <a class="brand brand-on-dark" href="index.html">
+        <div class="brand-badge">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        </div>
+        <span class="brand-name">Englisify</span>
+      </a>
+      <h2>Mulai belajar hari ini 🚀</h2>
+      <p>Bikin akun gratis dan mulai perjalanan Bahasa Inggris kamu dari level dasar sampai mahir.</p>
+      <ul class="auth-visual-list">
+        <li>6 level CEFR dari A1 sampai C2</li>
+        <li>Ratusan kosakata siap dipelajari</li>
+        <li>Flashcard, reading test &amp; ujian level</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="auth-form-wrap">
+    <div class="auth-card">
+      <a class="auth-back" href="index.html">
+        <svg class="icon" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+        Kembali ke Beranda Website
+      </a>
+
+      <h1 class="auth-title">Buat Akun Baru</h1>
+      <p class="auth-subtitle">Sudah punya akun? <a href="login.html">Masuk di sini</a></p>
+
+      <div class="form-error" id="registerError" hidden></div>
+
+      <form id="registerForm" novalidate>
+        <div class="field">
+          <label for="registerName">Nama Lengkap</label>
+          <input type="text" id="registerName" placeholder="Nama kamu" required maxlength="40" autocomplete="name">
+        </div>
+        <div class="field">
+          <label for="registerEmail">Email</label>
+          <input type="email" id="registerEmail" placeholder="nama@email.com" required autocomplete="email">
+        </div>
+        <div class="field">
+          <label for="registerPassword">Password</label>
+          <input type="password" id="registerPassword" placeholder="Minimal 6 karakter" required minlength="6" autocomplete="new-password">
+        </div>
+        <div class="field">
+          <label for="registerConfirmPassword">Konfirmasi Password</label>
+          <input type="password" id="registerConfirmPassword" placeholder="Ulangi password" required minlength="6" autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block auth-submit">Daftar</button>
+      </form>
+
+      <p class="auth-note">Akun disimpan secara lokal di browser ini (mode demo), belum terhubung ke server.</p>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/main.js"></script>
+<script>
+  (function () {
+    const form = document.getElementById('registerForm');
+    const errorBox = document.getElementById('registerError');
+    const authCard = document.querySelector('.auth-card');
+    const submitBtn = form.querySelector('.auth-submit');
+
+    const fields = {
+      name: document.getElementById('registerName'),
+      email: document.getElementById('registerEmail'),
+      password: document.getElementById('registerPassword'),
+      confirmPassword: document.getElementById('registerConfirmPassword'),
+    };
+
+    function clearFieldErrors() {
+      Object.values(fields).forEach((input) => {
+        input.closest('.field').classList.remove('invalid');
+      });
+    }
+
+    function hideError() {
+      errorBox.hidden = true;
+      clearFieldErrors();
+    }
+
+    function showError(message, field) {
+      errorBox.textContent = message;
+      errorBox.hidden = false;
+      clearFieldErrors();
+
+      const input = fields[field];
+      if (input) {
+        input.closest('.field').classList.add('invalid');
+        input.focus();
+      }
+
+      authCard.classList.remove('shake');
+      void authCard.offsetWidth;
+      authCard.classList.add('shake');
+    }
+
+    Object.values(fields).forEach((input) => {
+      input.addEventListener('input', hideError);
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      hideError();
+
+      const result = window.EnglisifyAuth.register({
+        name: fields.name.value,
+        email: fields.email.value,
+        password: fields.password.value,
+        confirmPassword: fields.confirmPassword.value,
+      });
+
+      if (result.ok) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Berhasil, mengalihkan...';
+        window.Englisify.toast('Pendaftaran berhasil! Selamat datang, ' + result.name + ' 🎉');
+        setTimeout(() => {
+          window.location.href = 'beranda.html';
+        }, 900);
+      } else {
+        showError(result.error, result.field);
+      }
+    });
+  })();
+</script>
+</body>
+</html>

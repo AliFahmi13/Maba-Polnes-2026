@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self';">
+<title>Masuk — Englisify</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="js/auth.js" data-guard="guest"></script>
+</head>
+<body>
+
+<div class="auth-page">
+
+  <div class="auth-visual">
+    <div class="auth-visual-inner">
+      <a class="brand brand-on-dark" href="index.html">
+        <div class="brand-badge">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        </div>
+        <span class="brand-name">Englisify</span>
+      </a>
+      <h2>Selamat datang kembali 👋</h2>
+      <p>Lanjutkan progres belajar Bahasa Inggris kamu — flashcard, reading test, dan ujian level menunggu.</p>
+      <ul class="auth-visual-list">
+        <li>Progres &amp; streak belajar tersimpan otomatis</li>
+        <li>6 level CEFR dari A1 sampai C2</li>
+        <li>Latihan kosakata &amp; reading test interaktif</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="auth-form-wrap">
+    <div class="auth-card">
+      <a class="auth-back" href="index.html">
+        <svg class="icon" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+        Kembali ke Beranda Website
+      </a>
+
+      <h1 class="auth-title">Masuk ke Akun</h1>
+      <p class="auth-subtitle">Belum punya akun? <a href="register.html">Daftar di sini</a></p>
+
+      <div class="form-error" id="loginError" hidden></div>
+
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" placeholder="nama@email.com" required autocomplete="email">
+        </div>
+        <div class="field">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" placeholder="Minimal 6 karakter" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block auth-submit">Masuk</button>
+      </form>
+
+      <p class="auth-note">Akun disimpan secara lokal di browser ini (mode demo), belum terhubung ke server.</p>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/main.js"></script>
+<script>
+  (function () {
+    const form = document.getElementById('loginForm');
+    const errorBox = document.getElementById('loginError');
+    const authCard = document.querySelector('.auth-card');
+    const emailInput = document.getElementById('loginEmail');
+    const passwordInput = document.getElementById('loginPassword');
+
+    function hideError() {
+      errorBox.hidden = true;
+    }
+
+    function showError(message) {
+      errorBox.textContent = message;
+      errorBox.hidden = false;
+      authCard.classList.remove('shake');
+      // Re-trigger animasi meski error sebelumnya sama persis.
+      void authCard.offsetWidth;
+      authCard.classList.add('shake');
+    }
+
+    [emailInput, passwordInput].forEach((input) => {
+      input.addEventListener('input', hideError);
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      hideError();
+
+      const result = window.EnglisifyAuth.login({
+        email: emailInput.value,
+        password: passwordInput.value,
+      });
+
+      if (result.ok) {
+        window.location.href = 'beranda.html';
+      } else {
+        showError(result.error);
+      }
+    });
+  })();
+</script>
+</body>
+</html>

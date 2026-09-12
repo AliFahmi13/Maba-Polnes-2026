@@ -6,6 +6,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self';">
 <title>Englisify — Profil Saya</title>
 <link rel="stylesheet" href="css/style.css">
+<script src="js/auth.js" data-guard="protected"></script>
 </head>
 <body>
 
@@ -20,7 +21,7 @@
     </div>
 
     <ul class="nav-list">
-      <li><a class="nav-link" href="index.html">
+      <li><a class="nav-link" href="beranda.html">
         <svg class="icon" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
         Beranda</a></li>
       <li><a class="nav-link" href="flashcard.html">
@@ -79,6 +80,10 @@
             <button data-nav="settings.html">
               <svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px;"><circle cx="12" cy="12" r="3"/><path d="M4 12h2m12 0h2M12 4v2m0 12v2M6.3 6.3l1.4 1.4m8.6 8.6 1.4 1.4M6.3 17.7l1.4-1.4m8.6-8.6 1.4-1.4"/></svg>
               Pengaturan
+            </button>
+            <button id="btnLogout" class="danger">
+              <svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+              Keluar
             </button>
           </div>
         </div>

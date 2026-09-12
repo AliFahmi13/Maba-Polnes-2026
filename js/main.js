@@ -84,6 +84,14 @@
 
     // Terapkan nama/inisial profil yang tersimpan ke sidebar & topbar
     window.Englisify.applyProfileToPage();
+
+    // Tombol "Keluar" di dropdown avatar (hanya ada di halaman internal)
+    const logoutBtn = document.getElementById('btnLogout');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        if (window.EnglisifyAuth) window.EnglisifyAuth.logout();
+      });
+    }
   });
 
   // Small reusable toast helper, available globally

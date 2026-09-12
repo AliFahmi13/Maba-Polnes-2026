@@ -215,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
 
       <div style="display:flex;gap:10px;margin-top:20px;">
-        <a href="index.html" class="btn btn-outline" style="flex:1;">Kembali ke Beranda</a>
+        <a href="beranda.html" class="btn btn-outline" style="flex:1;">Kembali ke Beranda</a>
         ${passed && meta.next
           ? `<button class="btn btn-primary" style="flex:1;" id="btnNextLevel">Lanjut ke ${meta.next} →</button>`
           : `<button class="btn btn-primary" style="flex:1;" id="btnRetryExam">Ulangi Ujian</button>`}

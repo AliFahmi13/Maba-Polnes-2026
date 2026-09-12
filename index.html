@@ -3,193 +3,226 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self';">
-<title>Englisify — Beranda</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self';">
+<title>Englisify — Kuasai Bahasa Inggris, Selangkah Demi Selangkah</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<div class="app-shell">
+<div class="landing">
 
-  <!-- ============ SIDEBAR ============ -->
-  <aside class="sidebar">
-    <div class="brand">
-      <div class="brand-badge">
-        <svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+  <!-- ============ NAVBAR ============ -->
+  <header class="landing-nav">
+    <div class="landing-nav-inner">
+      <a class="brand" href="#top">
+        <div class="brand-badge">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        </div>
+        <span class="brand-name">Englisify</span>
+      </a>
+
+      <nav class="landing-menu" id="landingMenu">
+        <a href="#fitur">Fitur</a>
+        <a href="#cara-kerja">Cara Kerja</a>
+        <a href="#tentang">Tentang</a>
+      </nav>
+
+      <div class="landing-nav-actions">
+        <a href="login.html" class="btn btn-outline btn-sm">Masuk</a>
+        <a href="register.html" class="btn btn-primary btn-sm">Daftar</a>
+        <button class="landing-nav-toggle" id="landingNavToggle" aria-label="Buka menu">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
       </div>
-      <span class="brand-name">Englisify</span>
     </div>
+  </header>
 
-    <ul class="nav-list">
-      <li><a class="nav-link active" href="index.html">
-        <svg class="icon" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
-        Beranda</a></li>
-      <li><a class="nav-link" href="flashcard.html">
-        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="14" height="16" rx="2"/><path d="M17 8h4v12H7"/></svg>
-        Flashcard</a></li>
-      <li><a class="nav-link" href="reading-test.html">
-        <svg class="icon" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M9 13h6M9 17h6"/></svg>
-        Reading Test</a></li>
-      <li><a class="nav-link" href="kosakata.html">
-        <svg class="icon" viewBox="0 0 24 24"><path d="M4 19V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 19a2 2 0 0 1 2-2h13"/></svg>
-        Kosakata</a></li>
-      <li><a class="nav-link" href="kalender.html">
-        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-        Kalender</a></li>
-      <li><a class="nav-link" href="ujian-level.html">
-        <svg class="icon" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5z"/></svg>
-        Ujian Level</a></li>
-      <li><a class="nav-link" href="settings.html">
-        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M4 12h2m12 0h2M12 4v2m0 12v2M6.3 6.3l1.4 1.4m8.6 8.6 1.4 1.4M6.3 17.7l1.4-1.4m8.6-8.6 1.4-1.4"/></svg>
-        Pengaturan</a></li>
-    </ul>
+  <main id="top">
 
-    <a class="sidebar-user" href="profile.html">
-      <div class="avatar">BS</div>
-      <div class="user-meta">
-        <div class="u-name">Budi Santoso</div>
-        <div class="u-level">Level B1</div>
-      </div>
-    </a>
-  </aside>
-
-  <!-- ============ MAIN ============ -->
-  <div class="main-col">
-    <header class="topbar">
-      <button class="menu-toggle" aria-label="Buka menu">
-        <svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-      </button>
-      <div class="search-box">
-        <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="text" placeholder="Cari kata, materi, atau fitur...">
-      </div>
-      <div class="topbar-right">
-        <div class="theme-toggle">
-          <button class="theme-btn" data-mode="light" title="Terang">
-            <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-          </button>
-          <button class="theme-btn" data-mode="dark" title="Gelap">
-            <svg class="icon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
-          </button>
+    <!-- ============ HERO ============ -->
+    <section class="hero-section">
+      <div class="hero-section-text">
+        <span class="hero-eyebrow">Belajar Bahasa Inggris jadi lebih terarah</span>
+        <h1>Kuasai Bahasa Inggris, Selangkah Demi Selangkah</h1>
+        <p>Flashcard, reading test, dan ujian level dalam satu tempat — dirancang supaya kamu naik level tanpa bingung mulai dari mana.</p>
+        <div class="hero-cta-row">
+          <a href="register.html" class="btn btn-primary btn-lg">Mulai Belajar Gratis</a>
+          <a href="#cara-kerja" class="btn btn-outline btn-lg">Lihat Cara Kerjanya</a>
         </div>
-        <div class="avatar-menu">
-          <button class="avatar sm" id="avatarMenuBtn" type="button" aria-label="Menu akun">BS</button>
-          <span class="avatar-chevron" aria-hidden="true">
-            <svg class="icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
-          </span>
-          <div class="dropdown" id="avatarDropdown">
-            <button data-nav="profile.html">
-              <svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px;"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
-              Profil Saya
-            </button>
-            <button data-nav="settings.html">
-              <svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px;"><circle cx="12" cy="12" r="3"/><path d="M4 12h2m12 0h2M12 4v2m0 12v2M6.3 6.3l1.4 1.4m8.6 8.6 1.4 1.4M6.3 17.7l1.4-1.4m8.6-8.6 1.4-1.4"/></svg>
-              Pengaturan
-            </button>
+      </div>
+
+      <div class="hero-section-visual">
+        <div class="mock-browser">
+          <div class="mock-browser-bar">
+            <span class="mock-dot c-red"></span>
+            <span class="mock-dot c-amber"></span>
+            <span class="mock-dot c-green"></span>
           </div>
-        </div>
-      </div>
-    </header>
-
-    <main class="content">
-
-      <div class="dash-grid">
-        <!-- LEFT column -->
-        <div>
-          <section class="hero-card">
-            <div>
-              <h1 id="dashGreeting">Selamat datang, Budi! 👋</h1>
-              <p>Siap belajar Bahasa Inggris hari ini?</p>
-            </div>
-            <div class="hero-quote">"Small steps every day lead to big results."</div>
-          </section>
-
-          <div class="mini-cards">
-            <div class="card mini-card">
-              <div class="mini-card-top">
-                <div class="mini-ico orange">
-                  <svg class="icon" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.4-1.2-2-1.5-3.3C9 6.5 10 4 12 3c-.3 1.5.5 2.7 1.5 4 1 1.3 2 2.7 2 4.5A5.5 5.5 0 0 1 4 12c0-1.2.5-2 1-2.7"/></svg>
-                </div>
-                <div>
-                  <div class="t">Progress Belajar</div>
-                  <div class="s">8 Hari Berturut-turut</div>
-                </div>
+          <div class="mock-browser-body">
+            <div class="mock-hero-card">
+              <div>
+                <div class="mock-line w-60"></div>
+                <div class="mock-line w-40 muted"></div>
               </div>
-              <div class="progress"><span id="dashProgress" style="width:62%"></span></div>
-              <div class="mini-foot" id="dashProgressLabel">62% &nbsp;·&nbsp; Level B1 · Menengah</div>
+              <div class="mock-badge">B1</div>
             </div>
-
-            <div class="card mini-card">
-              <div class="mini-card-top">
-                <div class="mini-ico purple">
-                  <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="14" height="16" rx="2"/><path d="M17 8h4v12H7"/></svg>
-                </div>
-                <div>
-                  <div class="t">Review Hari Ini</div>
-                  <div class="s">12 kata perlu diulang</div>
-                </div>
+            <div class="mock-mini-grid">
+              <div class="mock-mini-card">
+                <div class="mock-progress"><span style="width:62%"></span></div>
+                <div class="mock-line w-70 muted sm"></div>
               </div>
-              <div class="mini-foot">Estimasi waktu: ±8 menit</div>
-              <a href="flashcard.html" class="btn btn-primary btn-block">Mulai Review</a>
-            </div>
-          </div>
-
-          <h2 class="section-title mt-4">Statistik Belajar</h2>
-          <div class="stats-grid">
-            <div class="card stat-card c-blue">
-              <div class="stat-ico"><svg class="icon" viewBox="0 0 24 24" stroke="#fff"><path d="M4 19V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/></svg></div>
-              <div class="stat-num">428</div>
-              <div class="stat-label">Kata Dipelajari</div>
-            </div>
-            <div class="card stat-card c-purple">
-              <div class="stat-ico"><svg class="icon" viewBox="0 0 24 24" stroke="#fff"><rect x="3" y="4" width="14" height="16" rx="2"/><path d="M17 8h4v12H7"/></svg></div>
-              <div class="stat-num">12</div>
-              <div class="stat-label">Review Hari Ini</div>
-            </div>
-            <div class="card stat-card c-green">
-              <div class="stat-ico"><svg class="icon" viewBox="0 0 24 24" stroke="#fff"><path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5z"/></svg></div>
-              <div class="stat-num">84%</div>
-              <div class="stat-label">Nilai Rata-rata</div>
-            </div>
-            <div class="card stat-card c-amber">
-              <div class="stat-ico"><svg class="icon" viewBox="0 0 24 24" stroke="#fff"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 2v4M16 2v4"/></svg></div>
-              <div class="stat-num">B1</div>
-              <div class="stat-label">Level Saat Ini</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- RIGHT column -->
-        <div class="side-stack">
-          <div class="card card-pad">
-            <div class="card-row">
-              <span class="card-title">Level Belajar Kamu</span>
-              <span class="badge">B1</span>
-            </div>
-            <div class="level-list" id="levelList">
-              <!-- filled by dashboard.js -->
-            </div>
-          </div>
-
-          <div class="card card-pad">
-            <div class="card-title">Rekomendasi Hari Ini</div>
-            <a href="reading-test.html" class="recommend-card">
-              <div class="recommend-ico"><svg class="icon" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></div>
-              <div class="recommend-text">
-                <div class="t">Lanjutkan Reading Test</div>
-                <div class="s">Level B1 · 5 soal</div>
+              <div class="mock-mini-card">
+                <div class="mock-line w-50 sm"></div>
+                <div class="mock-pill">Mulai Review</div>
               </div>
-              <svg class="icon chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
-            </a>
+            </div>
+            <div class="mock-stat-row">
+              <div class="mock-stat c-blue"></div>
+              <div class="mock-stat c-purple"></div>
+              <div class="mock-stat c-green"></div>
+              <div class="mock-stat c-amber"></div>
+            </div>
           </div>
         </div>
       </div>
+    </section>
 
-    </main>
-  </div>
+    <!-- ============ FITUR UNGGULAN ============ -->
+    <section class="landing-section" id="fitur">
+      <div class="landing-section-head">
+        <h2>Fitur Unggulan</h2>
+        <p>Semua yang kamu butuhkan untuk belajar konsisten, sudah tersedia.</p>
+      </div>
+
+      <div class="feature-grid">
+        <div class="card feature-card">
+          <div class="mini-ico purple">
+            <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="14" height="16" rx="2"/><path d="M17 8h4v12H7"/></svg>
+          </div>
+          <h3>Flashcard</h3>
+          <p>Hafalkan kosakata baru dengan sistem review harian yang mengulang kata sampai benar-benar melekat.</p>
+        </div>
+
+        <div class="card feature-card">
+          <div class="mini-ico c-blue">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M9 13h6M9 17h6"/></svg>
+          </div>
+          <h3>Reading Test</h3>
+          <p>Latih pemahaman bacaan lewat teks &amp; soal yang disesuaikan dengan level CEFR kamu saat ini.</p>
+        </div>
+
+        <div class="card feature-card">
+          <div class="mini-ico c-amber">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5z"/></svg>
+          </div>
+          <h3>Ujian Level</h3>
+          <p>Uji kemampuanmu secara berkala untuk naik dari level A1 sampai C2 dengan indikator progres yang jelas.</p>
+        </div>
+
+        <div class="card feature-card">
+          <div class="mini-ico orange">
+            <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </div>
+          <h3>Kalender &amp; Streak</h3>
+          <p>Pantau konsistensi belajar harianmu lewat kalender aktivitas dan hitungan streak yang memotivasi.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CARA KERJA ============ -->
+    <section class="landing-section landing-section-soft" id="cara-kerja">
+      <div class="landing-section-head">
+        <h2>Cara Kerja</h2>
+        <p>Tiga langkah sederhana untuk mulai naik level.</p>
+      </div>
+
+      <div class="steps-grid">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <h3>Pilih Level</h3>
+          <p>Mulai dari level yang sesuai kemampuanmu, dari A1 (pemula) sampai C2 (mahir).</p>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <h3>Belajar Tiap Hari</h3>
+          <p>Isi target kata harian lewat flashcard, kosakata, dan reading test secara rutin.</p>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <h3>Naik Level</h3>
+          <p>Selesaikan ujian level untuk membuka level berikutnya dan lanjut belajar.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ STATISTIK ============ -->
+    <section class="landing-section" id="tentang">
+      <div class="landing-section-head">
+        <h2>Tentang Englisify</h2>
+        <p>Dibangun untuk menemani proses belajar Bahasa Inggris dari nol sampai mahir.</p>
+      </div>
+
+      <div class="stats-grid landing-stats-grid">
+        <div class="card stat-card c-blue">
+          <div class="stat-num">6</div>
+          <div class="stat-label">Level CEFR (A1–C2)</div>
+        </div>
+        <div class="card stat-card c-purple">
+          <div class="stat-num">500+</div>
+          <div class="stat-label">Kosakata Tersedia</div>
+        </div>
+        <div class="card stat-card c-green">
+          <div class="stat-num">4</div>
+          <div class="stat-label">Modul Belajar</div>
+        </div>
+        <div class="card stat-card c-amber">
+          <div class="stat-num">100%</div>
+          <div class="stat-label">Gratis Digunakan</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CTA PENUTUP ============ -->
+    <section class="landing-cta">
+      <h2>Siap naik level Bahasa Inggris kamu?</h2>
+      <p>Daftar sekarang, gratis, dan langsung mulai belajar hari ini.</p>
+      <a href="register.html" class="btn btn-primary btn-lg">Mulai Belajar Gratis</a>
+    </section>
+
+  </main>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="landing-footer">
+    <div class="landing-footer-inner">
+      <a class="brand" href="#top">
+        <div class="brand-badge">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        </div>
+        <span class="brand-name">Englisify</span>
+      </a>
+      <nav class="landing-footer-links">
+        <a href="#fitur">Fitur</a>
+        <a href="#cara-kerja">Cara Kerja</a>
+        <a href="#tentang">Tentang</a>
+      </nav>
+    </div>
+    <div class="landing-footer-copy">© 2026 Englisify. Semua hak cipta dilindungi.</div>
+  </footer>
+
 </div>
 
+<script>
+  (function () {
+    const toggle = document.getElementById('landingNavToggle');
+    const menu = document.getElementById('landingMenu');
+    if (toggle && menu) {
+      toggle.addEventListener('click', () => menu.classList.toggle('open'));
+      menu.querySelectorAll('a').forEach((link) => {
+        link.addEventListener('click', () => menu.classList.remove('open'));
+      });
+    }
+  })();
+</script>
 <script src="js/main.js"></script>
-<script src="js/dashboard.js"></script>
 </body>
 </html>

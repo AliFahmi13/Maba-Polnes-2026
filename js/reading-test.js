@@ -315,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
       '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px;">' +
         '<button class="btn btn-outline" id="btnRetry">Ulangi Level Ini</button>' +
         '<button class="btn btn-outline" id="btnChooseAnother">Pilih Level Lain</button>' +
-        '<a href="index.html" class="btn btn-primary">Kembali ke Beranda</a>' +
+        '<a href="beranda.html" class="btn btn-primary">Kembali ke Beranda</a>' +
       '</div>';
 
     el('btnRetry').addEventListener('click', () => beginSession(selectedLevel));
