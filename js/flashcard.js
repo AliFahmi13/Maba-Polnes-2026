@@ -237,6 +237,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   audioBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    if (!window.Englisify.isSoundEnabled()) {
+      window.Englisify.toast('Efek suara dimatikan — aktifkan lagi di Pengaturan');
+      return;
+    }
     try {
       const utter = new SpeechSynthesisUtterance(deck[index].word);
       utter.lang = 'en-US';

@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self';">
-<title>Englisify — Ujian Level</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self';">
+<title>Englisify — Pengaturan</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -18,6 +18,7 @@
       </div>
       <span class="brand-name">Englisify</span>
     </div>
+
     <ul class="nav-list">
       <li><a class="nav-link" href="index.html">
         <svg class="icon" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
@@ -34,10 +35,11 @@
       <li><a class="nav-link" href="kalender.html">
         <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
         Kalender</a></li>
-      <li><a class="nav-link active" href="ujian-level.html">
+      <li><a class="nav-link" href="ujian-level.html">
         <svg class="icon" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5z"/></svg>
         Ujian Level</a></li>
     </ul>
+
     <a class="sidebar-user" href="profile.html">
       <div class="avatar">BS</div>
       <div class="user-meta">
@@ -52,9 +54,9 @@
       <button class="menu-toggle" aria-label="Buka menu">
         <svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
       </button>
-      <div class="search-box">
-        <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="text" placeholder="Cari kata, materi, atau fitur...">
+      <div class="page-head" style="margin:0;">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M4 12h2m12 0h2M12 4v2m0 12v2M6.3 6.3l1.4 1.4m8.6 8.6 1.4 1.4M6.3 17.7l1.4-1.4m8.6-8.6 1.4-1.4"/></svg>
+        <h1 style="font-size:16px;">Pengaturan</h1>
       </div>
       <div class="topbar-right">
         <div class="theme-toggle">
@@ -81,74 +83,85 @@
     </header>
 
     <main class="content">
+      <div style="max-width:640px;">
 
-      <!-- STEP 1: choose level -->
-      <section id="stepSelect">
-        <div class="page-head"><h1>Pilih Level Belajar</h1></div>
-        <p class="sub" style="margin-bottom:20px;">Mulai dari level yang sesuai dengan kemampuanmu.</p>
-        <div class="level-grid" id="levelGrid"></div>
-      </section>
-
-      <!-- STEP 2: exam intro -->
-      <section id="stepIntro" class="hidden">
-        <div class="page-head">
-          <span class="back-link" id="backToSelect">
-            <svg class="icon" viewBox="0 0 24 24" style="width:15px;height:15px;"><path d="m15 18-6-6 6-6"/></svg>
-            Level Exam
-          </span>
-        </div>
-        <div class="card card-pad" style="max-width:640px;">
-          <h1 style="font-size:19px;font-weight:700;" id="introTitle">Ujian Level B1</h1>
-          <div class="exam-info-grid">
-            <div class="card exam-info-card">
-              <div class="ico"><svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><path d="M4 19V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/></svg></div>
-              <div class="num">30 soal</div>
-              <div class="lbl">Jumlah soal</div>
-            </div>
-            <div class="card exam-info-card">
-              <div class="ico"><svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
-              <div class="num">± 20 menit</div>
-              <div class="lbl">Waktu pengerjaan</div>
-            </div>
-            <div class="card exam-info-card">
-              <div class="ico"><svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5z"/></svg></div>
-              <div class="num">70%</div>
-              <div class="lbl">Nilai kelulusan</div>
+        <!-- Akun -->
+        <div class="card card-pad settings-group-card">
+          <div class="settings-group">
+            <div class="settings-group-title">Akun</div>
+            <div class="settings-row">
+              <div>
+                <div class="label-t" id="settingsAccountName">Budi Santoso</div>
+                <div class="label-s">Nama tampilan kamu di seluruh aplikasi</div>
+              </div>
+              <a href="profile.html" class="btn btn-outline btn-sm">Ubah di Profil</a>
             </div>
           </div>
-          <div style="font-size:13.5px;font-weight:700;margin-bottom:8px;">Materi yang diujikan:</div>
-          <div class="material-list">
-            <div class="material-item"><svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><path d="M20 6 9 17l-5-5"/></svg> Kosakata</div>
-            <div class="material-item"><svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><path d="M20 6 9 17l-5-5"/></svg> Tata bahasa</div>
-            <div class="material-item"><svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><path d="M20 6 9 17l-5-5"/></svg> Membaca</div>
+
+          <!-- Tampilan -->
+          <div class="settings-group">
+            <div class="settings-group-title">Tampilan</div>
+            <div class="settings-row">
+              <div>
+                <div class="label-t">Tema</div>
+                <div class="label-s">Pilih tampilan terang atau gelap</div>
+              </div>
+              <div class="theme-radio-row" id="settingsThemeRow" style="max-width:220px;">
+                <div class="theme-radio" data-mode="light">
+                  <svg class="icon" viewBox="0 0 24 24" style="width:15px;height:15px;"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+                  Terang
+                </div>
+                <div class="theme-radio" data-mode="dark">
+                  <svg class="icon" viewBox="0 0 24 24" style="width:15px;height:15px;"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
+                  Gelap
+                </div>
+              </div>
+            </div>
           </div>
-          <button class="btn btn-primary btn-block" id="startExamBtn">Mulai Ujian →</button>
+
+          <!-- Preferensi belajar -->
+          <div class="settings-group">
+            <div class="settings-group-title">Preferensi Belajar</div>
+            <div class="settings-row">
+              <div>
+                <div class="label-t">Target Kata Harian</div>
+                <div class="label-s">Jumlah kata yang ingin kamu pelajari tiap hari</div>
+              </div>
+              <select id="dailyGoalSelect">
+                <option value="10">10 kata / hari</option>
+                <option value="20">20 kata / hari</option>
+                <option value="30">30 kata / hari</option>
+                <option value="50">50 kata / hari</option>
+              </select>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="label-t">Efek Suara Pelafalan</div>
+                <div class="label-s">Aktifkan audio saat menekan ikon pelafalan di Flashcard &amp; Kosakata</div>
+              </div>
+              <div class="switch" id="soundSwitch" role="switch" aria-checked="true" tabindex="0"></div>
+            </div>
+          </div>
+
+          <!-- Data -->
+          <div class="settings-group">
+            <div class="settings-group-title">Data</div>
+            <div class="settings-row">
+              <div>
+                <div class="label-t">Hapus Semua Data Lokal</div>
+                <div class="label-s">Mengembalikan tema, profil, dan preferensi ke pengaturan awal</div>
+              </div>
+              <button class="btn btn-outline" id="btnResetData" style="color:var(--red-500);border-color:var(--red-500);">Hapus Data</button>
+            </div>
+          </div>
         </div>
-      </section>
 
-      <!-- STEP 3: exam quiz -->
-      <section id="stepExam" class="hidden">
-        <div class="page-head">
-          <span class="back-link" id="backToIntro">
-            <svg class="icon" viewBox="0 0 24 24" style="width:15px;height:15px;"><path d="m15 18-6-6 6-6"/></svg>
-            Exam Ujian
-          </span>
-          <span class="sub" id="examPager" style="margin-left:auto;font-weight:600;">1 dari 5</span>
-        </div>
-        <div class="card card-pad" style="max-width:640px;" id="examCard"></div>
-      </section>
-
-      <!-- STEP 4: exam result -->
-      <section id="stepResult" class="hidden">
-        <div class="page-head"><h1>Hasil Ujian</h1></div>
-        <div class="card card-pad reading-result" style="max-width:640px;" id="examResultCard"></div>
-      </section>
-
+      </div>
     </main>
   </div>
 </div>
 
 <script src="js/main.js"></script>
-<script src="js/ujian.js"></script>
+<script src="js/settings.js"></script>
 </body>
 </html>

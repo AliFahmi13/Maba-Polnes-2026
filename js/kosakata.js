@@ -93,6 +93,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!btn || !tbody.contains(btn)) return;
 
       if (btn.hasAttribute('data-speak')) {
+        if (!window.Englisify.isSoundEnabled()) {
+          window.Englisify.toast('Efek suara dimatikan — aktifkan lagi di Pengaturan');
+          return;
+        }
         try {
           const u = new SpeechSynthesisUtterance(btn.dataset.speak);
           u.lang = 'en-US';
