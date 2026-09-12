@@ -3,6 +3,21 @@
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
+  /* ---------------- Sapaan beranda: ikut nama profil & waktu saat ini ---------------- */
+  const greetingEl = document.getElementById('dashGreeting');
+  if (greetingEl) {
+    const profile = window.Englisify.getProfile();
+    const firstName = String(profile.name || '').trim().split(/\s+/)[0] || profile.name;
+
+    const hour = new Date().getHours();
+    let greetWord = 'Selamat malam';
+    if (hour >= 4 && hour < 11) greetWord = 'Selamat pagi';
+    else if (hour >= 11 && hour < 15) greetWord = 'Selamat siang';
+    else if (hour >= 15 && hour < 18) greetWord = 'Selamat sore';
+
+    greetingEl.textContent = `${greetWord}, ${firstName}! 👋`;
+  }
+
   const levels = window.Englisify.levels;
 
   const checkIcon = `<svg class="icon" viewBox="0 0 24 24" stroke="#12b76a"><path d="M20 6 9 17l-5-5"/></svg>`;
