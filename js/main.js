@@ -4,15 +4,10 @@
    ========================================================================== */
 
 (function () {
-  const STORAGE_KEY = 'englisify-theme'; // 'light' | 'dark' | 'system'
-
-  function systemPrefersDark() {
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  }
+  const STORAGE_KEY = 'englisify-theme'; // 'light' | 'dark'
 
   function applyTheme(mode) {
-    const effective = mode === 'system' ? (systemPrefersDark() ? 'dark' : 'light') : mode;
-    document.documentElement.setAttribute('data-theme', effective);
+    document.documentElement.setAttribute('data-theme', mode);
     document.querySelectorAll('.theme-btn').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.mode === mode);
     });
@@ -31,17 +26,10 @@
   applyTheme(getStoredTheme());
 
   document.addEventListener('DOMContentLoaded', () => {
-    // Wire up the light / system / dark toggle buttons
+    // Wire up the light / dark toggle buttons
     document.querySelectorAll('.theme-btn').forEach((btn) => {
       btn.addEventListener('click', () => setTheme(btn.dataset.mode));
     });
-
-    // React live if the OS theme changes while "system" is selected
-    if (window.matchMedia) {
-      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-        if (getStoredTheme() === 'system') applyTheme('system');
-      });
-    }
 
     // Mobile sidebar toggle
     const menuToggle = document.querySelector('.menu-toggle');
