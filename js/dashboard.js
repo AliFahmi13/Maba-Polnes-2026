@@ -2,7 +2,12 @@
    Englisify — Dashboard (Beranda) logic
    ========================================================================== */
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // Sync words learned count from Supabase history
+  if (window.Englisify.syncWordsLearnedFromHistory) {
+    await window.Englisify.syncWordsLearnedFromHistory();
+  }
+  
   /* ---------------- Sapaan beranda: ikut nama profil & waktu saat ini ---------------- */
   const greetingEl = document.getElementById('dashGreeting');
   if (greetingEl) {

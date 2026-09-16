@@ -2,7 +2,12 @@
    Englisify — Halaman Pengaturan
    ========================================================================== */
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // Sync words learned count from Supabase history
+  if (window.Englisify.syncWordsLearnedFromHistory) {
+    await window.Englisify.syncWordsLearnedFromHistory();
+  }
+  
   const stats = window.Englisify.getLearningStats();
   const currentLevel = window.Englisify.getLevels().find((level) => level.state === 'current');
 

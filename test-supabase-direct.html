@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supabase Direct Test</title>
+<style>
+  body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; }
+  .status { margin: 10px 0; padding: 10px; background: #000; border: 1px solid #0f0; }
+  .error { border-color: #f00; color: #f00; }
+  .success { border-color: #0f0; color: #0f0; }
+  pre { background: #000; padding: 10px; overflow-x: auto; }
+  button { background: #0f0; color: #000; border: none; padding: 10px 20px; cursor: pointer; margin: 5px; }
+  button:hover { background: #0a0; }
+</style>
+</head>
+<body>
+
+<h1>🔥 SUPABASE DIRECT CONNECTION TEST</h1>
+
+<div id="output"></div>
+
+<button onclick="testConnection()">1. Test Connection</button>
+<button onclick="testFlashcards()">2. Test Flashcards API</button>
+<button onclick="testHistory()">3. Test History API</button>
+<button onclick="runAll()">RUN ALL TESTS</button>
+
+<script>
+const SUPABASE_URL = 'https://nyzlrtjzfzskcdnrvyzo.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55emxydGp6Znpza2NkbnJ2eXpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1MTMyMDIsImV4cCI6MjEwNTA4OTIwMn0.cPHl3OpPOWGvhZuXWzJf5epr2xYP64weQh0aPI6rtI8';
+
+const output = document.getElementById('output');
+
+function log(message, type = 'status') {
+  const div = document.createElement('div');
+  div.className = `status ${type}`;
+  div.innerHTML = message;
+  output.appendChild(div);
+  console.log(message);
+}
+
+function clear() {
+  output.innerHTML = '';
+}
+
+async function testConnection() {
+  log('🔌 Testing basic connection to Supabase...');
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/flashcard?select=word&limit=1`, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY
+      }
+    });
+    
+    if (response.ok) {
+      log('✅ CONNECTION SUCCESS - Supabase is reachable', 'success');
+      return true;
+    } else {
+      const error = await response.text();
+      log(`❌ CONNECTION FAILED - Status: ${response.status} ${response.statusText}`, 'error');
+      log(`Error: ${error}`, 'error');
+      return false;
+    }
+  } catch (error) {
+    log(`❌ CONNECTION ERROR - ${error.message}`, 'error');
+    log('Possible causes: Network issue, wrong URL, or CORS problem', 'error');
+    return false;
+  }
+}
+
+async function testFlashcards() {
+  log('📚 Testing flashcard table...');
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/flashcard?select=*&limit=5`, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      log(`❌ FLASHCARD API FAILED - Status: ${response.status}`, 'error');
+      log(`Error: ${JSON.stringify(data, null, 2)}`, 'error');
+      
+      if (response.status === 404) {
+        log('💡 Table probably doesn\'t exist. Run complete-setup.sql in Supabase!', 'error');
+      } else if (response.status === 401 || response.status === 403) {
+        log('💡 Permission denied. Check RLS policies or API key', 'error');
+      }
+      return false;
+    }
+    
+    if (!Array.isArray(data)) {
+      log(`❌ UNEXPECTED RESPONSE - Expected array, got: ${typeof data}`, 'error');
+      log(`Response: ${JSON.stringify(data)}`, 'error');
+      return false;
+    }
+    
+    if (data.length === 0) {
+      log('⚠️ FLASHCARD TABLE IS EMPTY - No data found', 'error');
+      log('💡 Run the seed part of complete-setup.sql to add flashcards', 'error');
+      return false;
+    }
+    
+    log(`✅ FLASHCARD API SUCCESS - Found ${data.length} cards (showing 5 max)`, 'success');
+    log('<pre>' + JSON.stringify(data, null, 2) + '</pre>');
+    
+    // Verify data structure
+    const firstCard = data[0];
+    const hasRequiredFields = firstCard.word && firstCard.meaning && firstCard.type;
+    if (hasRequiredFields) {
+      log('✅ Data structure looks good (has word, meaning, type)', 'success');
+    } else {
+      log('⚠️ Data structure incomplete - missing required fields', 'error');
+      log(`First card structure: ${JSON.stringify(Object.keys(firstCard))}`, 'error');
+    }
+    
+    return true;
+  } catch (error) {
+    log(`❌ FLASHCARD TEST ERROR - ${error.message}`, 'error');
+    return false;
+  }
+}
+
+async function testHistory() {
+  log('📊 Testing vocabulary history table...');
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/user_vocabulary_history?select=*&limit=5`, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      log(`❌ HISTORY API FAILED - Status: ${response.status}`, 'error');
+      if (response.status === 404) {
+        log('💡 Table doesn\'t exist. Run complete-setup.sql!', 'error');
+      }
+      return false;
+    }
+    
+    if (data.length === 0) {
+      log('ℹ️ HISTORY TABLE IS EMPTY - No learning history yet (this is OK for new users)', 'status');
+    } else {
+      log(`✅ HISTORY API SUCCESS - Found ${data.length} records`, 'success');
+      log('<pre>' + JSON.stringify(data, null, 2) + '</pre>');
+    }
+    
+    return true;
+  } catch (error) {
+    log(`❌ HISTORY TEST ERROR - ${error.message}`, 'error');
+    return false;
+  }
+}
+
+async function runAll() {
+  clear();
+  log('🚀 RUNNING ALL TESTS...\n');
+  
+  const connOk = await testConnection();
+  if (!connOk) {
+    log('\n❌ STOPPED - Connection test failed. Fix connection first!', 'error');
+    return;
+  }
+  
+  log('\n');
+  await testFlashcards();
+  
+  log('\n');
+  await testHistory();
+  
+  log('\n✅ ALL TESTS COMPLETE!', 'success');
+}
+
+// Auto-run on load
+window.addEventListener('DOMContentLoaded', runAll);
+</script>
+
+</body>
+</html>

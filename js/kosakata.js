@@ -143,11 +143,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   let currentFilter = 'semua';
   let searchTerm = '';
+  let currentPage = 1;
+  const itemsPerPage = 20;
 
   const escapeHtml = window.Englisify.escapeHtml;
 
   const tbody = document.getElementById('vocabBody');
   const searchInput = document.getElementById('vocabSearch');
+  const paginationInfo = document.getElementById('vocabPaginationInfo');
+  const btnPrevPage = document.getElementById('btnPrevPage');
+  const btnNextPage = document.getElementById('btnNextPage');
 
   function iconMore() {
     return `<svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/></svg>`;
@@ -172,7 +177,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       return matchesFilter && matchesSearch;
     });
 
-    if (rows.length === 0) {
+    const totalRows = rows.length;
+    const totalPages = Math.ceil(totalRows / itemsPerPage);
+    
+    // Adjust current page if out of bounds
+    if (currentPage > totalPages) currentPage = Math.max(1, totalPages);
+    if (currentPage < 1) currentPage = 1;
+    
+    // Paginate
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedRows = rows.slice(startIndex, endIndex);
+
+    // Update pagination info
+    if (paginationInfo) {
+      const showingStart = totalRows === 0 ? 0 : startIndex + 1;
+      const showingEnd = Math.min(endIndex, totalRows);
+      paginationInfo.textContent = `Menampilkan ${showingStart}-${showingEnd} dari ${totalRows} kata`;
+    }
+    
+    // Update pagination buttons
+    if (btnPrevPage) btnPrevPage.disabled = currentPage === 1;
+    if (btnNextPage) btnNextPage.disabled = currentPage >= totalPages;
+
+    if (paginatedRows.length === 0) {
       const message = vocab.length === 0 
         ? 'Belum ada kosakata di database. Jalankan seed SQL terlebih dahulu.'
         : currentFilter === 'dipelajari'
@@ -182,7 +210,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    tbody.innerHTML = rows.map((v) => {
+    tbody.innerHTML = paginatedRows.map((v) => {
       const type = Object.prototype.hasOwnProperty.call(typeLabels, v.type) ? v.type : 'noun';
       const word = escapeHtml(v.word);
       const meaning = escapeHtml(v.meaning);
@@ -296,6 +324,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.querySelectorAll('#vocabTabs .tab-btn').forEach((t) => t.classList.remove('active'));
       tab.classList.add('active');
       currentFilter = tab.dataset.filter;
+      currentPage = 1; // Reset to first page
       render();
     });
   });
@@ -303,8 +332,28 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Search
   searchInput.addEventListener('input', () => {
     searchTerm = searchInput.value.trim().toLowerCase();
+    currentPage = 1; // Reset to first page
     render();
   });
+
+  // Pagination
+  if (btnPrevPage) {
+    btnPrevPage.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        render();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+  }
+  
+  if (btnNextPage) {
+    btnNextPage.addEventListener('click', () => {
+      currentPage++;
+      render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
 
   // Add-word modal - saves to localStorage
   const overlay = document.getElementById('modalOverlay');

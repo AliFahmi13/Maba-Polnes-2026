@@ -19,21 +19,56 @@
   }
 
   function session() { return readJson(SESSION_KEY, null); }
-  function accessToken() { const current = session(); return current && current.access_token; }
+  function accessToken() { 
+    const current = session(); 
+    if (!current || !current.access_token) return null;
+    
+    // Check if token is expired
+    if (current.expires_at) {
+      const expiresAt = new Date(current.expires_at * 1000);
+      if (expiresAt < new Date()) {
+        // Token expired - clear it
+        try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+        return null;
+      }
+    }
+    
+    return current.access_token;
+  }
   function userId() { const current = session(); return current && current.user && current.user.id; }
 
   async function request(path, options) {
+    const headers = {
+      apikey: SUPABASE_ANON_KEY,
+      ...(accessToken() ? { Authorization: `Bearer ${accessToken()}` } : {}),
+      ...(options && options.headers ? options.headers : {}),
+    };
+    
+    // Only add Content-Type for POST/PUT/PATCH requests
+    if (options && ['POST', 'PUT', 'PATCH'].includes(options.method)) {
+      headers['Content-Type'] = 'application/json';
+    }
+    
     const response = await fetch(`${SUPABASE_URL}${path}`, {
       ...options,
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        'Content-Type': 'application/json',
-        ...(accessToken() ? { Authorization: `Bearer ${accessToken()}` } : {}),
-        ...(options && options.headers ? options.headers : {}),
-      },
+      headers,
     });
     const body = await response.json().catch(() => ({}));
     if (!response.ok) {
+      // If JWT expired, clear session and retry without auth
+      if (response.status === 401 && (body.message || '').includes('expired')) {
+        try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+        // Retry request without Authorization header
+        delete headers.Authorization;
+        const retryResponse = await fetch(`${SUPABASE_URL}${path}`, {
+          ...options,
+          headers,
+        });
+        if (retryResponse.ok) {
+          return await retryResponse.json().catch(() => ({}));
+        }
+      }
+      
       const message = body.error_description || body.msg || body.message || 'Supabase request gagal.';
       const error = new Error(message);
       error.status = response.status;

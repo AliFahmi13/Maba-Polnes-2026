@@ -7,78 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
   window.Englisify.startLearningSession('flashcard');
 
   /* ------------------------------------------------------------------
-     Level metadata — konsisten dengan Beranda & Ujian Level.
-     state: 'done' | 'current' | 'locked'
+     Flashcard Repository: Loads ALL data from Supabase (no local fallback)
      ------------------------------------------------------------------ */
-  /* ------------------------------------------------------------------
-     Bank kata per level — TIDAK PERNAH dimutasi langsung.
-     Setiap kali sesi dimulai, kita bikin SALINAN lalu diacak.
-     ------------------------------------------------------------------ */
-  const WORD_BANK = {
-    A1: [
-      { word: 'apple', ipa: '/ˈæpəl/', type: 'noun', typeLabel: 'kata benda', meaning: 'Buah apel.', example: '"I eat an apple every morning."' },
-      { word: 'house', ipa: '/haʊs/', type: 'noun', typeLabel: 'kata benda', meaning: 'Rumah, tempat tinggal.', example: '"This is my house."' },
-      { word: 'book', ipa: '/bʊk/', type: 'noun', typeLabel: 'kata benda', meaning: 'Buku.', example: '"She is reading a book."' },
-      { word: 'school', ipa: '/skuːl/', type: 'noun', typeLabel: 'kata benda', meaning: 'Sekolah.', example: '"He goes to school by bus."' },
-      { word: 'chair', ipa: '/tʃɛər/', type: 'noun', typeLabel: 'kata benda', meaning: 'Kursi.', example: '"Please sit on the chair."' },
-      { word: 'water', ipa: '/ˈwɔːtər/', type: 'noun', typeLabel: 'kata benda', meaning: 'Air.', example: '"I drink water every day."' },
-      { word: 'family', ipa: '/ˈfæməli/', type: 'noun', typeLabel: 'kata benda', meaning: 'Keluarga.', example: '"My family is very important to me."' },
-      { word: 'friend', ipa: '/frɛnd/', type: 'noun', typeLabel: 'kata benda', meaning: 'Teman.', example: '"She is my best friend."' },
-    ],
-    A2: [
-      { word: 'weather', ipa: '/ˈwɛðər/', type: 'noun', typeLabel: 'kata benda', meaning: 'Cuaca.', example: '"The weather is nice today."' },
-      { word: 'borrow', ipa: '/ˈbɒroʊ/', type: 'verb', typeLabel: 'kata kerja', meaning: 'Meminjam.', example: '"Can I borrow your pen?"' },
-      { word: 'early', ipa: '/ˈɜːrli/', type: 'adjective', typeLabel: 'kata sifat', meaning: 'Awal, pagi-pagi.', example: '"I woke up early this morning."' },
-      { word: 'holiday', ipa: '/ˈhɒlɪdeɪ/', type: 'noun', typeLabel: 'kata benda', meaning: 'Hari libur, liburan.', example: '"We are planning a holiday next month."' },
-      { word: 'difficult', ipa: '/ˈdɪfɪkəlt/', type: 'adjective', typeLabel: 'kata sifat', meaning: 'Sulit.', example: '"This exercise is quite difficult."' },
-      { word: 'arrive', ipa: '/əˈraɪv/', type: 'verb', typeLabel: 'kata kerja', meaning: 'Tiba, sampai.', example: '"The train will arrive at noon."' },
-      { word: 'crowded', ipa: '/ˈkraʊdɪd/', type: 'adjective', typeLabel: 'kata sifat', meaning: 'Ramai, penuh sesak.', example: '"The mall was very crowded on weekends."' },
-      { word: 'remember', ipa: '/rɪˈmɛmbər/', type: 'verb', typeLabel: 'kata kerja', meaning: 'Mengingat.', example: "\"I can't remember his name.\"" },
-    ],
-    B1: [
-      { word: 'departure', ipa: '/dɪˈpɑːrtʃər/', type: 'noun', typeLabel: 'kata benda', meaning: 'Tindakan meninggalkan suatu tempat, terutama untuk memulai perjalanan.', example: '"Our departure is at 7:30 tomorrow."' },
-      { word: 'reliable', ipa: '/rɪˈlaɪəbl/', type: 'adjective', typeLabel: 'kata sifat', meaning: 'Dapat dipercaya atau diandalkan secara konsisten.', example: '"She is a reliable friend who always keeps her word."' },
-      { word: 'neighborhood', ipa: '/ˈneɪbərhʊd/', type: 'noun', typeLabel: 'kata benda', meaning: 'Lingkungan atau area tempat tinggal di sekitar seseorang.', example: '"We took a walk around the neighborhood."' },
-      { word: 'opportunity', ipa: '/ˌɒpərˈtjuːnəti/', type: 'noun', typeLabel: 'kata benda', meaning: 'Kesempatan atau peluang untuk melakukan sesuatu.', example: '"This job is a great opportunity for her career."' },
-      { word: 'improve', ipa: '/ɪmˈpruːv/', type: 'verb', typeLabel: 'kata kerja', meaning: 'Membuat atau menjadi lebih baik dari sebelumnya.', example: '"He wants to improve his English speaking skills."' },
-      { word: 'experience', ipa: '/ɪkˈspɪəriəns/', type: 'noun', typeLabel: 'kata benda', meaning: 'Pengetahuan atau keterampilan yang didapat dari melakukan sesuatu.', example: '"Living abroad was an unforgettable experience."' },
-      { word: 'comfortable', ipa: '/ˈkʌmftəbl/', type: 'adjective', typeLabel: 'kata sifat', meaning: 'Merasa nyaman, tenang, tanpa rasa sakit atau kekhawatiran.', example: '"Make yourself comfortable on the sofa."' },
-      { word: 'surroundings', ipa: '/səˈraʊndɪŋz/', type: 'noun', typeLabel: 'kata benda', meaning: 'Lingkungan atau kondisi sekitar suatu tempat.', example: '"The hotel is set in beautiful surroundings."' },
-      { word: 'routine', ipa: '/ruːˈtiːn/', type: 'noun', typeLabel: 'kata benda', meaning: 'Rangkaian kegiatan tetap yang dilakukan secara teratur.', example: '"Exercise is part of my daily routine."' },
-      { word: 'patient', ipa: '/ˈpeɪʃnt/', type: 'adjective', typeLabel: 'kata sifat', meaning: 'Mampu menunggu atau menerima sesuatu tanpa mengeluh.', example: '"Please be patient, the results will come soon."' },
-    ],
-    B2: [
-      { word: 'adjust', ipa: '/əˈdʒʌst/', type: 'verb', typeLabel: 'kata kerja', meaning: 'Menyesuaikan diri atau mengubah sesuatu agar lebih sesuai.', example: '"It took time to adjust to the new schedule."' },
-      { word: 'unfamiliar', ipa: '/ˌʌnfəˈmɪliər/', type: 'adjective', typeLabel: 'kata sifat', meaning: 'Belum dikenal atau tidak familiar.', example: '"The streets felt unfamiliar in the dark."' },
-      { word: 'achieve', ipa: '/əˈtʃiːv/', type: 'verb', typeLabel: 'kata kerja', meaning: 'Berhasil mencapai suatu tujuan setelah berusaha.', example: '"She worked hard to achieve her goals."' },
-      { word: 'confident', ipa: '/ˈkɒnfɪdənt/', type: 'adjective', typeLabel: 'kata sifat', meaning: 'Merasa yakin akan kemampuan diri sendiri.', example: '"He felt confident before the job interview."' },
-      { word: 'gesture', ipa: '/ˈdʒestʃər/', type: 'noun', typeLabel: 'kata benda', meaning: 'Gerakan tubuh atau tangan untuk menyampaikan sesuatu.', example: '"She waved as a friendly gesture."' },
-      { word: 'encourage', ipa: '/ɪnˈkʌrɪdʒ/', type: 'verb', typeLabel: 'kata kerja', meaning: 'Memberi semangat atau dorongan kepada seseorang.', example: '"His teacher encouraged him to keep practicing."' },
-      { word: 'boundary', ipa: '/ˈbaʊndri/', type: 'noun', typeLabel: 'kata benda', meaning: 'Batas yang memisahkan satu wilayah dari wilayah lain.', example: '"The river forms a natural boundary between the towns."' },
-      { word: 'genuine', ipa: '/ˈdʒenjuɪn/', type: 'adjective', typeLabel: 'kata sifat', meaning: 'Asli dan tulus, tidak dibuat-buat.', example: '"Her smile was warm and genuine."' },
-    ],
-    C1: [
-      { word: 'ambiguous', ipa: '/æmˈbɪɡjuəs/', type: 'adjective', typeLabel: 'kata sifat', meaning: 'Ambigu, memiliki lebih dari satu arti.', example: '"His answer was ambiguous and confusing."' },
-      { word: 'meticulous', ipa: '/məˈtɪkjələs/', type: 'adjective', typeLabel: 'kata sifat', meaning: 'Sangat teliti dan hati-hati.', example: '"She is meticulous about her work."' },
-      { word: 'resilience', ipa: '/rɪˈzɪliəns/', type: 'noun', typeLabel: 'kata benda', meaning: 'Ketahanan atau kemampuan bangkit dari kesulitan.', example: '"Resilience helped him recover from failure."' },
-      { word: 'articulate', ipa: '/ɑːrˈtɪkjəleɪt/', type: 'verb', typeLabel: 'kata kerja', meaning: 'Mengungkapkan pikiran dengan jelas.', example: '"He can articulate his ideas very clearly."' },
-      { word: 'plausible', ipa: '/ˈplɔːzəbl/', type: 'adjective', typeLabel: 'kata sifat', meaning: 'Masuk akal, dapat dipercaya.', example: '"That explanation sounds plausible."' },
-      { word: 'discrepancy', ipa: '/dɪˈskrɛpənsi/', type: 'noun', typeLabel: 'kata benda', meaning: 'Perbedaan atau ketidaksesuaian.', example: '"There was a discrepancy in the report."' },
-      { word: 'inevitable', ipa: '/ɪnˈɛvɪtəbl/', type: 'adjective', typeLabel: 'kata sifat', meaning: 'Tidak dapat dihindari.', example: '"Change is inevitable in life."' },
-      { word: 'underlying', ipa: '/ˌʌndərˈlaɪɪŋ/', type: 'adjective', typeLabel: 'kata sifat', meaning: 'Mendasar, yang menjadi dasar sesuatu.', example: '"We need to find the underlying cause."' },
-    ],
-    C2: [
-      { word: 'ubiquitous', ipa: '/juːˈbɪkwɪtəs/', type: 'adjective', typeLabel: 'kata sifat', meaning: 'Ada di mana-mana.', example: '"Smartphones have become ubiquitous."' },
-      { word: 'ephemeral', ipa: '/ɪˈfɛmərəl/', type: 'adjective', typeLabel: 'kata sifat', meaning: 'Sementara, cepat berlalu.', example: '"Fame can be ephemeral."' },
-      { word: 'paradigm', ipa: '/ˈpærədaɪm/', type: 'noun', typeLabel: 'kata benda', meaning: 'Pola pikir atau kerangka acuan umum.', example: '"This discovery created a new paradigm."' },
-      { word: 'eloquent', ipa: '/ˈɛləkwənt/', type: 'adjective', typeLabel: 'kata sifat', meaning: 'Fasih dan meyakinkan dalam berbicara.', example: '"She gave an eloquent speech."' },
-      { word: 'nuance', ipa: '/ˈnjuːɑːns/', type: 'noun', typeLabel: 'kata benda', meaning: 'Perbedaan makna yang sangat halus.', example: '"Translation often loses subtle nuance."' },
-      { word: 'cognizant', ipa: '/ˈkɒɡnɪzənt/', type: 'adjective', typeLabel: 'kata sifat', meaning: 'Menyadari sepenuhnya.', example: '"He was cognizant of the risks involved."' },
-      { word: 'juxtapose', ipa: '/ˈdʒʌkstəpoʊz/', type: 'verb', typeLabel: 'kata kerja', meaning: 'Menempatkan dua hal berdampingan untuk dibandingkan.', example: '"The film juxtaposes past and present."' },
-      { word: 'quintessential', ipa: '/ˌkwɪntɪˈsɛnʃəl/', type: 'adjective', typeLabel: 'kata sifat', meaning: 'Paling khas atau paling mewakili sesuatu.', example: "\"It's the quintessential example of good design.\"" },
-    ],
-  };
-
   const localFlashcardRepository = {
     async getAll() {
       if (!window.EnglisifySupabase || typeof window.EnglisifySupabase.getFlashcards !== 'function') return [];
@@ -199,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
     progressWrap.classList.remove('hidden');
     active.classList.remove('hidden');
 
-    // Salin lalu acak urutan kartu — data asli (WORD_BANK) tidak diubah.
+    // Shuffle and fill deck from Supabase data
     deck = [];
     let source = shuffle(bank);
     while (deck.length < targetCount) {
@@ -278,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.querySelectorAll('.rate-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const labels = { forgot: 'Ditandai: Lupa', hard: 'Ditandai: Sulit', good: 'Ditandai: Ingat', easy: 'Ditandai: Mudah' };
       if ((btn.dataset.rate === 'forgot' || btn.dataset.rate === 'hard') && redoCount < redoLimit) {
         deck.push(deck[index]);
@@ -289,6 +219,12 @@ document.addEventListener('DOMContentLoaded', () => {
       // Also record to vocabulary history for Supabase tracking
       if (window.EnglisifySupabase && typeof window.EnglisifySupabase.recordVocabularyReview === 'function') {
         window.EnglisifySupabase.recordVocabularyReview(deck[index].word, btn.dataset.rate)
+          .then(() => {
+            // Sync words learned count after recording
+            if (window.Englisify.syncWordsLearnedFromHistory) {
+              window.Englisify.syncWordsLearnedFromHistory();
+            }
+          })
           .catch((error) => console.warn('Vocabulary review tracking skipped:', error));
       }
       

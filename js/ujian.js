@@ -15,14 +15,15 @@ document.addEventListener('DOMContentLoaded', () => {
     C2: { total: 40, time: '± 35 menit', pass: 80, next: null },
   };
 
-  const examQuestions = [
-    { category: 'Kosakata', q: 'Pilih arti yang paling tepat untuk kata "reliable".', options: ['Dapat dipercaya', 'Cepat', 'Mahal', 'Kosong'], correct: 0 },
-    { category: 'Kosakata', q: 'Kata mana yang termasuk kata kerja (verb)?', options: ['Beautiful', 'Improve', 'Kindness', 'Slowly'], correct: 1 },
-    { category: 'Tata Bahasa', q: 'Pilih bentuk kalimat yang benar: "She ___ to school every day."', options: ['go', 'goes', 'going', 'gone'], correct: 1 },
-    { category: 'Tata Bahasa', q: 'Pilih kata sambung yang tepat: "I stayed home ___ it was raining."', options: ['but', 'because', 'so', 'or'], correct: 1 },
-    { category: 'Membaca', q: 'Bacaan tentang beradaptasi di kota baru menyarankan sikap...', options: ['Terburu-buru', 'Sabar', 'Cuek', 'Malas'], correct: 1 },
-    { category: 'Membaca', q: 'Salah satu cara beradaptasi menurut bacaan adalah...', options: ['Bertemu orang baru', 'Menutup diri', 'Diam di kamar', 'Menghindari rutinitas'], correct: 0 },
-  ];
+  // Get questions for the active level from the question bank
+  function getExamQuestions() {
+    if (!window.EnglisifyExamBank || !window.EnglisifyExamBank[activeLevel]) {
+      console.error('Question bank not loaded for level:', activeLevel);
+      return [];
+    }
+    return window.EnglisifyExamBank[activeLevel];
+  }
+  
   const escapeHtml = window.Englisify.escapeHtml;
 
   let activeLevel = 'B1';
@@ -102,6 +103,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('backToIntro').addEventListener('click', () => showStep(stepIntro));
 
   document.getElementById('startExamBtn').addEventListener('click', () => {
+    const examQuestions = getExamQuestions();
+    if (examQuestions.length === 0) {
+      window.Englisify.toast('Soal ujian belum tersedia untuk level ini');
+      return;
+    }
     current = 0;
     userAnswers.length = 0;
     showStep(stepExam);
@@ -110,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ---------- Step 3: exam quiz ---------- */
   function renderExamQuestion() {
+    const examQuestions = getExamQuestions();
     document.getElementById('examPager').textContent = `${current + 1} dari ${examQuestions.length}`;
     const item = examQuestions[current];
     selected = null;
@@ -134,6 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const opt = event.target.closest('.option');
     const actionBtn = event.target.closest('#examAction');
     const optList = document.getElementById('examOptList');
+    const examQuestions = getExamQuestions();
     if (opt && !answered) {
       optList.querySelectorAll('.option').forEach((option) => option.classList.remove('selected'));
       opt.classList.add('selected');
@@ -163,6 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ---------- Step 4: result ---------- */
   function showExamResult() {
+    const examQuestions = getExamQuestions();
     const categories = ['Kosakata', 'Tata Bahasa', 'Membaca'];
     const catScore = {};
     categories.forEach((c) => (catScore[c] = { correct: 0, total: 0 }));

@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Debug Flashcards - Englisify</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { 
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 20px;
+    background: #f5f5f5;
+  }
+  .container { max-width: 1000px; margin: 0 auto; }
+  h1 { margin-bottom: 20px; color: #333; }
+  .section { 
+    background: white; 
+    border-radius: 8px; 
+    padding: 20px; 
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  .section h2 { 
+    font-size: 18px; 
+    margin-bottom: 15px; 
+    color: #4F46E5;
+    border-bottom: 2px solid #4F46E5;
+    padding-bottom: 8px;
+  }
+  .status { 
+    padding: 10px; 
+    border-radius: 4px; 
+    margin: 10px 0;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+  }
+  .status.success { background: #d1fae5; color: #065f46; border: 1px solid #10b981; }
+  .status.error { background: #fee2e2; color: #991b1b; border: 1px solid #ef4444; }
+  .status.info { background: #dbeafe; color: #1e40af; border: 1px solid #3b82f6; }
+  .status.warning { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
+  button {
+    background: #4F46E5;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-right: 10px;
+    margin-bottom: 10px;
+  }
+  button:hover { background: #4338ca; }
+  button:disabled { background: #9ca3af; cursor: not-allowed; }
+  pre { 
+    background: #1f2937; 
+    color: #f3f4f6; 
+    padding: 15px; 
+    border-radius: 6px; 
+    overflow-x: auto;
+    font-size: 12px;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  .grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+    gap: 10px;
+    margin: 15px 0;
+  }
+  .stat {
+    background: #f3f4f6;
+    padding: 15px;
+    border-radius: 6px;
+    text-align: center;
+  }
+  .stat-value { 
+    font-size: 32px; 
+    font-weight: bold; 
+    color: #4F46E5;
+    display: block;
+  }
+  .stat-label { 
+    font-size: 12px; 
+    color: #6b7280; 
+    margin-top: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+  }
+  th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  th {
+    background: #f9fafb;
+    font-weight: 600;
+    color: #374151;
+    font-size: 13px;
+  }
+  td { font-size: 13px; }
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .tag.noun { background: #dbeafe; color: #1e40af; }
+  .tag.verb { background: #dcfce7; color: #166534; }
+  .tag.adjective { background: #fef3c7; color: #92400e; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🔍 Flashcard & Kosakata Debug Tool</h1>
+  
+  <div class="section">
+    <h2>📡 Connection Status</h2>
+    <div id="connectionStatus">Checking...</div>
+  </div>
+
+  <div class="section">
+    <h2>🎯 Quick Actions</h2>
+    <button onclick="testConnection()">Test Supabase Connection</button>
+    <button onclick="loadFlashcards()">Load Flashcards</button>
+    <button onclick="loadVocabularyHistory()">Load Vocabulary History</button>
+    <button onclick="syncWordsLearned()">Sync Words Learned Count</button>
+    <button onclick="clearCache()">Clear Cache</button>
+  </div>
+
+  <div class="section">
+    <h2>📊 Statistics</h2>
+    <div class="grid" id="stats">
+      <div class="stat">
+        <span class="stat-value" id="totalCards">-</span>
+        <span class="stat-label">Total Cards</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value" id="totalLevels">-</span>
+        <span class="stat-label">Levels</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value" id="historyCount">-</span>
+        <span class="stat-label">History Records</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value" id="userStatus">-</span>
+        <span class="stat-label">User Status</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>📋 Flashcard Data</h2>
+    <div id="flashcardData">No data loaded yet. Click "Load Flashcards" button above.</div>
+  </div>
+
+  <div class="section">
+    <h2>📚 Vocabulary History</h2>
+    <div id="historyData">No history loaded yet. Click "Load Vocabulary History" button above.</div>
+  </div>
+
+  <div class="section">
+    <h2>🐛 Console Log</h2>
+    <pre id="consoleLog">Waiting for actions...</pre>
+  </div>
+</div>
+
+<script src="js/supabase.js"></script>
+<script>
+let logBuffer = [];
+
+function log(message, type = 'info') {
+  const timestamp = new Date().toLocaleTimeString();
+  const entry = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
+  logBuffer.push(entry);
+  if (logBuffer.length > 50) logBuffer.shift();
+  document.getElementById('consoleLog').textContent = logBuffer.join('\n');
+  console.log(entry);
+}
+
+function showStatus(elementId, message, type = 'info') {
+  const el = document.getElementById(elementId);
+  el.innerHTML = `<div class="status ${type}">${message}</div>`;
+}
+
+async function testConnection() {
+  log('Testing Supabase connection...');
+  try {
+    const hasSession = window.EnglisifySupabase.hasSession();
+    const userId = window.EnglisifySupabase.getUserId();
+    
+    log(`Session: ${hasSession ? 'Active' : 'None'}`, hasSession ? 'success' : 'warning');
+    log(`User ID: ${userId || 'Not logged in'}`, userId ? 'success' : 'warning');
+    
+    showStatus('connectionStatus', 
+      `✅ Connection OK<br>Session: ${hasSession ? 'Active' : 'None'}<br>User: ${userId || 'Guest'}`,
+      hasSession ? 'success' : 'warning'
+    );
+    
+    document.getElementById('userStatus').textContent = hasSession ? '✓' : '✗';
+  } catch (error) {
+    log(`Connection error: ${error.message}`, 'error');
+    showStatus('connectionStatus', `❌ Connection Failed: ${error.message}`, 'error');
+  }
+}
+
+async function loadFlashcards() {
+  log('Loading flashcards from Supabase...');
+  try {
+    const cards = await window.EnglisifySupabase.getFlashcards();
+    log(`Loaded ${cards.length} flashcards`, 'success');
+    
+    document.getElementById('totalCards').textContent = cards.length;
+    
+    // Count levels
+    const levelCounts = {};
+    cards.forEach(card => {
+      levelCounts[card.level] = (levelCounts[card.level] || 0) + 1;
+    });
+    document.getElementById('totalLevels').textContent = Object.keys(levelCounts).length;
+    
+    // Display data
+    if (cards.length === 0) {
+      showStatus('flashcardData', '⚠️ No flashcards found in database. Run seed SQL first!', 'warning');
+    } else {
+      let html = '<table><thead><tr><th>Level</th><th>Word</th><th>Type</th><th>Meaning</th></tr></thead><tbody>';
+      cards.slice(0, 20).forEach(card => {
+        html += `<tr>
+          <td><strong>${card.level}</strong></td>
+          <td>${card.word} <small>${card.ipa}</small></td>
+          <td><span class="tag ${card.type}">${card.type}</span></td>
+          <td>${card.meaning.substring(0, 60)}${card.meaning.length > 60 ? '...' : ''}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      if (cards.length > 20) {
+        html += `<div class="status info">Showing 20 of ${cards.length} cards</div>`;
+      }
+      
+      // Level breakdown
+      html += '<div class="status info"><strong>Level Breakdown:</strong><br>';
+      Object.entries(levelCounts).sort().forEach(([level, count]) => {
+        html += `${level}: ${count} cards &nbsp;&nbsp;`;
+      });
+      html += '</div>';
+      
+      document.getElementById('flashcardData').innerHTML = html;
+    }
+  } catch (error) {
+    log(`Flashcard loading error: ${error.message}`, 'error');
+    showStatus('flashcardData', `❌ Error: ${error.message}`, 'error');
+    document.getElementById('totalCards').textContent = '!';
+  }
+}
+
+async function loadVocabularyHistory() {
+  log('Loading vocabulary history...');
+  try {
+    const history = await window.EnglisifySupabase.getVocabularyHistory();
+    log(`Loaded ${history.length} history records`, 'success');
+    
+    document.getElementById('historyCount').textContent = history.length;
+    
+    if (history.length === 0) {
+      showStatus('historyData', '⚠️ No vocabulary history yet. Study some flashcards first!', 'info');
+    } else {
+      let html = '<table><thead><tr><th>Word</th><th>Last Studied</th><th>Next Review</th><th>Rating</th></tr></thead><tbody>';
+      history.slice(0, 20).forEach(h => {
+        const lastStudied = new Date(h.last_studied).toLocaleString();
+        const nextReview = new Date(h.next_review).toLocaleString();
+        html += `<tr>
+          <td><strong>${h.word}</strong></td>
+          <td><small>${lastStudied}</small></td>
+          <td><small>${nextReview}</small></td>
+          <td><span class="tag ${h.rating}">${h.rating}</span></td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      if (history.length > 20) {
+        html += `<div class="status info">Showing 20 of ${history.length} records</div>`;
+      }
+      document.getElementById('historyData').innerHTML = html;
+    }
+  } catch (error) {
+    log(`History loading error: ${error.message}`, 'error');
+    showStatus('historyData', `❌ Error: ${error.message}`, 'error');
+    document.getElementById('historyCount').textContent = '!';
+  }
+}
+
+async function syncWordsLearned() {
+  log('Syncing words learned count...');
+  try {
+    if (!window.Englisify || typeof window.Englisify.syncWordsLearnedFromHistory !== 'function') {
+      log('Sync function not available', 'error');
+      alert('Sync function not available. Make sure main.js is loaded.');
+      return;
+    }
+    
+    await window.Englisify.syncWordsLearnedFromHistory();
+    const stats = window.Englisify.getLearningStats();
+    log(`Synced! Words learned: ${stats.wordsLearned}`, 'success');
+    alert(`✅ Synced successfully!\n\nWords Learned: ${stats.wordsLearned}\n\nRefresh dashboard to see updated count.`);
+  } catch (error) {
+    log(`Sync error: ${error.message}`, 'error');
+    alert(`❌ Sync failed: ${error.message}`);
+  }
+}
+
+function clearCache() {
+  try {
+    localStorage.clear();
+    log('Cache cleared successfully', 'success');
+    alert('Cache cleared! Refresh the page to reload.');
+  } catch (error) {
+    log(`Cache clear error: ${error.message}`, 'error');
+  }
+}
+
+// Auto-run on load
+window.addEventListener('DOMContentLoaded', () => {
+  log('Debug tool loaded');
+  
+  // Load main.js first if available
+  const mainScript = document.createElement('script');
+  mainScript.src = 'js/main.js';
+  mainScript.onload = () => {
+    log('main.js loaded');
+    testConnection();
+    loadFlashcards();
+  };
+  mainScript.onerror = () => {
+    log('Failed to load main.js - some features may not work', 'warning');
+    testConnection();
+    loadFlashcards();
+  };
+  document.head.appendChild(mainScript);
+});
+</script>
+
+</body>
+</html>

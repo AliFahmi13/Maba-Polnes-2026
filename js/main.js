@@ -178,6 +178,27 @@
 
   window.Englisify.getLearningStats = getLearningStats;
   window.Englisify.saveLearningStats = saveLearningStats;
+  
+  // Update words learned count from Supabase vocabulary history
+  window.Englisify.syncWordsLearnedFromHistory = async function() {
+    try {
+      if (!window.EnglisifySupabase || typeof window.EnglisifySupabase.getVocabularyHistory !== 'function') {
+        return;
+      }
+      const history = await window.EnglisifySupabase.getVocabularyHistory();
+      const uniqueWords = new Set(history.map(h => h.word.toLowerCase()));
+      const stats = getLearningStats();
+      if (uniqueWords.size !== stats.wordsLearned) {
+        saveLearningStats({
+          wordsLearned: uniqueWords.size,
+          reviewedWords: [...uniqueWords].slice(-5000),
+        });
+      }
+    } catch (error) {
+      console.warn('Failed to sync words learned from history:', error);
+    }
+  };
+  
   window.Englisify.recordFlashcardReview = function (card, rating) {
     if (!card || typeof card.word !== 'string') return;
     const stats = getLearningStats();
