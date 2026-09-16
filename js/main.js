@@ -97,8 +97,7 @@
 
   // Small reusable toast helper, available globally
   window.Englisify = window.Englisify || {};
-  // Replace this adapter with an API repository when a backend is introduced.
-  window.Englisify.dataStore = window.Englisify.dataStore || {
+  window.Englisify.dataStore = window.Englisify.dataStore || window.EnglisifySupabase.dataStore || {
     get(key) {
       try { return localStorage.getItem(key); } catch (error) { return null; }
     },
@@ -128,7 +127,7 @@
     return `${key}:${email}`;
   }
 
-  // Account-scoped facade: replace this with API calls when the database is ready.
+  // Account-scoped facade over the Supabase-backed data store.
   window.Englisify.accountStore = window.Englisify.accountStore || {
     get(key) {
       return window.Englisify.dataStore.get(getAccountKey(key));
@@ -179,6 +178,19 @@
 
   window.Englisify.getLearningStats = getLearningStats;
   window.Englisify.saveLearningStats = saveLearningStats;
+  window.Englisify.recordFlashcardReview = function (card, rating) {
+    if (!card || typeof card.word !== 'string') return;
+    const stats = getLearningStats();
+    const reviewedWords = new Set(Array.isArray(stats.reviewedWords) ? stats.reviewedWords : []);
+    reviewedWords.add(card.word.trim().toLowerCase());
+    saveLearningStats({
+      wordsLearned: reviewedWords.size,
+      todayReviews: (Number(stats.todayReviews) || 0) + 1,
+      reviewedWords: [...reviewedWords].slice(-5000),
+      lastFlashcardRating: rating,
+      lastFlashcardAt: new Date().toISOString(),
+    });
+  };
   window.Englisify.getSessionTargetMinutes = function () {
     const value = Number(window.Englisify.dataStore.get(getAccountKey(SESSION_TARGET_KEY)));
     return [10, 20, 30, 50].includes(value) ? value : 20;
@@ -271,7 +283,7 @@
 
   function readLevelProgress() {
     try {
-      const parsed = JSON.parse(window.Englisify.dataStore.get(LEVEL_PROGRESS_KEY) || '{}');
+      const parsed = JSON.parse(window.Englisify.accountStore.get(LEVEL_PROGRESS_KEY) || '{}');
       return parsed && typeof parsed === 'object' ? parsed : {};
     } catch (error) {
       return {};
@@ -279,7 +291,7 @@
   }
 
   function writeLevelProgress(progress) {
-    window.Englisify.dataStore.set(LEVEL_PROGRESS_KEY, JSON.stringify(progress));
+    window.Englisify.accountStore.set(LEVEL_PROGRESS_KEY, JSON.stringify(progress));
   }
 
   function getLevels() {
@@ -334,7 +346,7 @@
      ------------------------------------------------------------------ */
   window.Englisify.getProfile = function () {
     try {
-      const raw = localStorage.getItem(PROFILE_KEY);
+      const raw = window.Englisify.accountStore.get(PROFILE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && typeof parsed.name === 'string' && parsed.name.trim()) {
@@ -350,7 +362,7 @@
   window.Englisify.setProfileName = function (name) {
     const safeName = String(name || '').trim() || DEFAULT_NAME;
     try {
-      localStorage.setItem(PROFILE_KEY, JSON.stringify({ name: safeName }));
+      window.Englisify.accountStore.set(PROFILE_KEY, JSON.stringify({ name: safeName }));
     } catch (error) {
       // Private browsing atau storage penuh — UI tetap jalan, cuma tidak tersimpan.
     }

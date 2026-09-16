@@ -4,6 +4,8 @@
   const authCard = document.querySelector('.auth-card');
   const emailInput = document.getElementById('loginEmail');
   const passwordInput = document.getElementById('loginPassword');
+  const submitBtn = form.querySelector('.auth-submit');
+  let submitting = false;
 
   function hideError() {
     errorBox.hidden = true;
@@ -24,16 +26,28 @@
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (submitting) return;
     hideError();
+    submitting = true;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Memeriksa...';
 
-    const result = await window.EnglisifyAuth.login({
-      email: emailInput.value,
-      password: passwordInput.value,
-    });
+    let result;
+    try {
+      result = await window.EnglisifyAuth.login({
+        email: emailInput.value,
+        password: passwordInput.value,
+      });
+    } catch (error) {
+      result = { ok: false, error: 'Login gagal. Coba lagi.' };
+    }
 
     if (result.ok) {
       window.location.href = 'beranda.html';
     } else {
+      submitting = false;
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Masuk';
       showError(result.error);
     }
   });

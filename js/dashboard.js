@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
       window.Englisify.toast(`Selesaikan level sebelumnya untuk membuka ${code}`);
       return;
     }
-    window.Englisify.dataStore.set('englisify-selected-level', code);
+    window.Englisify.accountStore.set('englisify-selected-level', code);
     window.location.href = 'ujian-level.html';
   });
 });

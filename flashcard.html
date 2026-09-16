@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self' https://nyzlrtjzfzskcdnrvyzo.supabase.co; object-src 'none'; base-uri 'none'; form-action 'self';">
 <script src="js/theme-init.js"></script>
 <title>Englisify — Flashcard</title>
 <link rel="stylesheet" href="css/style.css">
+<script src="js/supabase.js"></script>
 <script src="js/auth.js" data-guard="protected"></script>
 </head>
 <body>
@@ -129,7 +130,7 @@
         </div>
 
         <div id="fcEmptyState" class="card hidden" style="padding:44px 20px;text-align:center;color:var(--text-secondary);">
-          Belum ada soal untuk level ini.
+          Belum ada flashcard di Supabase. Jalankan seed SQL lalu refresh halaman ini.
         </div>
 
         <div class="flash-progress" id="fcProgressWrap">
@@ -175,6 +176,7 @@
           <p class="flash-caption">Seberapa baik kamu mengingat kata ini?</p>
 
           <div class="rate-row">
+            <button class="btn btn-outline" id="fcPreviousBtn" type="button">← Sebelumnya</button>
             <button class="rate-btn rate-forgot" data-rate="forgot">Lupa<small>1 hari</small></button>
             <button class="rate-btn rate-hard" data-rate="hard">Sulit<small>1 hari</small></button>
             <button class="rate-btn rate-good" data-rate="good">Ingat<small>3 hari</small></button>

@@ -80,27 +80,26 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const localFlashcardRepository = {
-    getByLevel(levelCode) {
-      return WORD_BANK[levelCode] || [];
-    },
-    getAll() {
-      const builtInCards = Object.values(WORD_BANK).flatMap((cards) => cards.map((card) => ({ ...card })));
-      const builtInWords = new Set(builtInCards.map((card) => card.word.toLowerCase()));
-      const storedVocabulary = window.Englisify.accountStore.getJSON('englisify-vocabulary', []);
-      const customCards = Array.isArray(storedVocabulary)
-        ? storedVocabulary
-          .filter((card) => card && typeof card.word === 'string' && typeof card.meaning === 'string')
-          .filter((card) => !builtInWords.has(card.word.trim().toLowerCase()))
-          .map((card) => ({
+    async getAll() {
+      if (!window.EnglisifySupabase || typeof window.EnglisifySupabase.getFlashcards !== 'function') return [];
+      const rows = await window.EnglisifySupabase.getFlashcards();
+      const typeLabels = { noun: 'kata benda', verb: 'kata kerja', adjective: 'kata sifat' };
+      return rows
+        .filter((card) => card && typeof card.word === 'string' && card.word.trim())
+        .map((card) => {
+          const type = String(card.type || card.word_type || 'noun').toLowerCase();
+          return {
+            id: card.id,
+            level: card.level || '',
             word: card.word.trim(),
             ipa: card.ipa || '',
-            type: card.type || 'noun',
-            typeLabel: { noun: 'kata benda', verb: 'kata kerja', adjective: 'kata sifat' }[card.type] || 'kata benda',
-            meaning: card.meaning.trim(),
-            example: card.example || `"${card.word.trim()}"`,
-          }))
-        : [];
-      return [...builtInCards, ...customCards];
+            type,
+            typeLabel: typeLabels[type] || type,
+            meaning: String(card.meaning || card.translation || card.definition || '').trim(),
+            example: card.example || card.example_sentence || `"${card.word.trim()}"`,
+          };
+        })
+        .filter((card) => card.meaning);
     },
   };
   const flashcardRepository = window.Englisify.flashcardRepository || localFlashcardRepository;
@@ -127,6 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let redoCount = 0;
   let redoLimit = window.Englisify.getFlashcardRedoLimit();
   const favorites = new Set();
+  const FAVORITES_KEY = 'englisify-flashcard-favorites';
 
   const el = (id) => document.getElementById(id);
   const stepLevel = el('fcStepLevel');
@@ -142,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const card = el('flashcard');
   const countEl = el('fcCount'), barEl = el('fcProgressBar');
   const favBtn = el('fcFavBtn'), audioBtn = el('fcAudioBtn');
+  const previousBtn = el('fcPreviousBtn');
   const active = el('fcActive'), done = el('fcDone');
   const sessionSummary = el('fcSessionSummary');
 
@@ -167,14 +168,21 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* ---------------- STEP 2: sesi flashcard ---------------- */
-  function beginSession() {
-    const bank = flashcardRepository.getAll();
+  async function beginSession() {
+    let bank = [];
+    try {
+      bank = await flashcardRepository.getAll();
+    } catch (error) {
+      console.warn('Flashcard sync skipped:', error.message);
+      window.Englisify.toast('Flashcard Supabase belum bisa dimuat');
+    }
     const targetCount = window.Englisify.getFlashcardTarget();
     levelBadge.textContent = 'Semua Level';
     stepLevel.classList.add('hidden');
     stepDeck.classList.remove('hidden');
     done.classList.add('hidden');
     favorites.clear();
+    window.Englisify.accountStore.getJSON(FAVORITES_KEY, []).forEach((word) => favorites.add(String(word).toLowerCase()));
     index = 0;
     redoCount = 0;
     redoLimit = window.Englisify.getFlashcardRedoLimit();
@@ -211,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
     flipped = false;
     front.classList.add('visible');
     back.classList.remove('visible');
-    favBtn.classList.toggle('on', favorites.has(index));
+    favBtn.classList.toggle('on', favorites.has(item.word.toLowerCase()));
     countEl.textContent = `${index + 1} dari ${deck.length}`;
     barEl.style.width = `${((index + 1) / deck.length) * 100}%`;
   }
@@ -235,13 +243,20 @@ document.addEventListener('DOMContentLoaded', () => {
     render();
   }
 
+  previousBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    if (index > 0) goTo(index - 1);
+  });
+
   card.addEventListener('click', flip);
 
   favBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    favorites.has(index) ? favorites.delete(index) : favorites.add(index);
-    favBtn.classList.toggle('on', favorites.has(index));
-    window.Englisify.toast(favorites.has(index) ? 'Ditambahkan ke favorit' : 'Dihapus dari favorit');
+    const wordKey = deck[index].word.toLowerCase();
+    favorites.has(wordKey) ? favorites.delete(wordKey) : favorites.add(wordKey);
+    window.Englisify.accountStore.setJSON(FAVORITES_KEY, [...favorites]);
+    favBtn.classList.toggle('on', favorites.has(wordKey));
+    window.Englisify.toast(favorites.has(wordKey) ? 'Ditambahkan ke favorit' : 'Dihapus dari favorit');
   });
 
   audioBtn.addEventListener('click', (e) => {
@@ -268,6 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
         deck.push(deck[index]);
         redoCount++;
       }
+      window.Englisify.recordFlashcardReview(deck[index], btn.dataset.rate);
       window.Englisify.toast(labels[btn.dataset.rate]);
       goTo(index + 1);
     });
