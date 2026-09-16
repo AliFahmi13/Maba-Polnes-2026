@@ -88,16 +88,69 @@
   }
 
   async function getFlashcards() {
-    const globalCards = await request('/rest/v1/flashcard?select=*&order=id.asc');
-    let userCards = [];
-    if (userId() && accessToken()) {
-      try {
-        userCards = await request(`/rest/v1/user_flashcards?auth_user_id=eq.${encodeURIComponent(userId())}&select=*&order=id.asc`);
-      } catch (error) {
-        if (error.status !== 404 && error.status !== 400) throw error;
-      }
+    try {
+      const cards = await request('/rest/v1/flashcard?select=*&order=id.asc');
+      return Array.isArray(cards) ? cards : [];
+    } catch (error) {
+      console.error('getFlashcards error:', error);
+      return [];
     }
-    return [...globalCards, ...userCards];
+  }
+
+  async function getVocabularyHistory() {
+    if (!userId() || !accessToken()) return [];
+    try {
+      const result = await request(`/rest/v1/user_vocabulary_history?user_id=eq.${encodeURIComponent(userId())}&select=*`);
+      return Array.isArray(result) ? result : [];
+    } catch (error) {
+      if (error.status === 404 || error.status === 400) return [];
+      console.error('getVocabularyHistory error:', error);
+      return [];
+    }
+  }
+
+  async function recordVocabularyReview(word, rating) {
+    if (!userId() || !accessToken()) {
+      console.warn('User not logged in, skipping vocabulary review recording');
+      return;
+    }
+    try {
+      // Calculate next review interval based on rating
+      let intervalDays = 1;
+      switch (rating) {
+        case 'forgot': intervalDays = 1; break;
+        case 'hard': intervalDays = 3; break;
+        case 'good': intervalDays = 7; break;
+        case 'easy': intervalDays = 14; break;
+        default: intervalDays = 7;
+      }
+
+      const now = new Date();
+      const nextReview = new Date(now.getTime() + intervalDays * 24 * 60 * 60 * 1000);
+
+      console.log('Recording vocabulary review:', { word, rating, intervalDays });
+
+      // Upsert: insert or update if word already exists
+      const result = await request('/rest/v1/user_vocabulary_history', {
+        method: 'POST',
+        headers: { 
+          Prefer: 'resolution=merge-duplicates,return=representation',
+        },
+        body: JSON.stringify({
+          user_id: userId(),
+          word: word,
+          last_studied: now.toISOString(),
+          next_review: nextReview.toISOString(),
+          rating: rating,
+        }),
+      });
+      
+      console.log('Vocabulary review recorded:', result);
+      return result;
+    } catch (error) {
+      console.error('recordVocabularyReview error:', error);
+      throw error;
+    }
   }
 
   function setData(key, value) {
@@ -132,6 +185,8 @@
     pullData,
     getDictionary,
     getFlashcards,
+    getVocabularyHistory,
+    recordVocabularyReview,
     dataStore: {
       get(key) { const values = cache(); return values[cacheKey(key)] ?? null; },
       set: setData,

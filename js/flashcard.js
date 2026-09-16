@@ -284,6 +284,13 @@ document.addEventListener('DOMContentLoaded', () => {
         redoCount++;
       }
       window.Englisify.recordFlashcardReview(deck[index], btn.dataset.rate);
+      
+      // Also record to vocabulary history for Supabase tracking
+      if (window.EnglisifySupabase && typeof window.EnglisifySupabase.recordVocabularyReview === 'function') {
+        window.EnglisifySupabase.recordVocabularyReview(deck[index].word, btn.dataset.rate)
+          .catch((error) => console.warn('Vocabulary review tracking skipped:', error));
+      }
+      
       window.Englisify.toast(labels[btn.dataset.rate]);
       goTo(index + 1);
     });
