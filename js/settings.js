@@ -3,6 +3,19 @@
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
+  const stats = window.Englisify.getLearningStats();
+  const currentLevel = window.Englisify.getLevels().find((level) => level.state === 'current');
+
+  const summaryValues = {
+    settingsWordsLearned: stats.wordsLearned,
+    settingsStreak: stats.streakDays,
+    settingsAverageScore: `${stats.averageScore}%`,
+    settingsCurrentLevel: `Level ${currentLevel.code}`,
+  };
+  Object.entries(summaryValues).forEach(([id, value]) => {
+    const element = document.getElementById(id);
+    if (element) element.textContent = value;
+  });
 
   /* ---------------- Akun (read-only, diedit dari halaman Profil) ---------------- */
   document.getElementById('settingsAccountName').textContent = window.Englisify.getProfile().name;
@@ -35,6 +48,27 @@ document.addEventListener('DOMContentLoaded', () => {
     window.Englisify.toast(`Target harian diatur ke ${dailyGoalSelect.value} kata/hari`);
   });
 
+  const sessionTargetSelect = document.getElementById('sessionTargetSelect');
+  sessionTargetSelect.value = String(window.Englisify.getSessionTargetMinutes());
+  sessionTargetSelect.addEventListener('change', () => {
+    window.Englisify.setSessionTargetMinutes(Number(sessionTargetSelect.value));
+    window.Englisify.toast(`Target sesi diatur ke ${sessionTargetSelect.value} menit`);
+  });
+
+  const flashcardTargetSelect = document.getElementById('flashcardTargetSelect');
+  flashcardTargetSelect.value = String(window.Englisify.getFlashcardTarget());
+  flashcardTargetSelect.addEventListener('change', () => {
+    window.Englisify.setFlashcardTarget(Number(flashcardTargetSelect.value));
+    window.Englisify.toast(`Target Flashcard diatur ke ${flashcardTargetSelect.value} kartu`);
+  });
+
+  const flashcardRedoSelect = document.getElementById('flashcardRedoSelect');
+  flashcardRedoSelect.value = String(window.Englisify.getFlashcardRedoLimit());
+  flashcardRedoSelect.addEventListener('change', () => {
+    window.Englisify.setFlashcardRedoLimit(Number(flashcardRedoSelect.value));
+    window.Englisify.toast(`Batas kartu ulang diatur ke ${flashcardRedoSelect.value} kartu`);
+  });
+
   /* ---------------- Efek suara ---------------- */
   const soundSwitch = document.getElementById('soundSwitch');
 
@@ -63,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ---------------- Hapus semua data lokal ---------------- */
   document.getElementById('btnResetData').addEventListener('click', () => {
     const confirmed = window.confirm(
-      'Yakin ingin menghapus semua data lokal? Tema, nama profil, dan preferensi akan kembali ke pengaturan awal.'
+      'Yakin ingin menghapus semua data lokal? Akun, progres belajar, tema, nama profil, dan preferensi akan dihapus.'
     );
     if (!confirmed) return;
     window.Englisify.resetAllLocalData();

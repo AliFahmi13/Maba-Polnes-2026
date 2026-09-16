@@ -1,23 +1,23 @@
 /* ==========================================================================
    Englisify — Auth (MOCK, berbasis localStorage)
    ==========================================================================
-   PENTING: ini BUKAN autentikasi sungguhan. Tidak ada server/database asli —
-   akun & password disimpan apa adanya di localStorage browser pengguna
-   masing-masing, tanpa enkripsi/hash. Cukup untuk demo/prototipe/tugas,
-   TAPI tidak aman & tidak cocok untuk produksi nyata. Kalau proyek ini
-   nanti dilanjutkan ke produksi, bagian ini wajib diganti auth server
-   asli (mis. Firebase Auth / Supabase Auth / backend sendiri).
+  PENTING: ini tetap BUKAN autentikasi sungguhan. Data akun berada di
+  localStorage browser pengguna dan seluruh kode dapat dimodifikasi pengguna.
+  Password tidak disimpan mentah, tetapi aplikasi produksi tetap wajib memakai
+  auth server asli (mis. Firebase Auth / Supabase Auth / backend sendiri).
    ========================================================================== */
 
 (function () {
-  const USERS_KEY = 'englisify-users';     // [{ name, email, password }]
+  const USERS_KEY = 'englisify-users';     // [{ name, email, passwordHash, createdAt }]
   const SESSION_KEY = 'englisify-session'; // email pengguna yang sedang login
 
   function readUsers() {
     try {
       const raw = localStorage.getItem(USERS_KEY);
       const parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? parsed : [];
+      return Array.isArray(parsed)
+        ? parsed.filter((user) => user && typeof user === 'object' && typeof user.email === 'string')
+        : [];
     } catch (error) {
       return [];
     }
@@ -35,9 +35,21 @@
     return String(email || '').trim().toLowerCase();
   }
 
+  async function hashPassword(password) {
+    if (!window.crypto || !window.crypto.subtle) {
+      throw new Error('Web Crypto API tidak tersedia. Buka aplikasi melalui HTTPS atau localhost.');
+    }
+    const data = new TextEncoder().encode(password);
+    const digest = await window.crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+  }
+
   function findUser(email) {
     const target = normalizeEmail(email);
-    return readUsers().find((u) => normalizeEmail(u.email) === target) || null;
+    return readUsers().find((u) => {
+      const hasCredential = typeof u.passwordHash === 'string' || typeof u.password === 'string';
+      return hasCredential && normalizeEmail(u.email) === target;
+    }) || null;
   }
 
   function getSessionEmail() {
@@ -59,12 +71,24 @@
 
   function isLoggedIn() {
     const email = getSessionEmail();
-    return !!(email && findUser(email));
+    const valid = !!(email && findUser(email));
+    if (!valid && email) setSessionEmail(null);
+    return valid;
   }
 
   function getCurrentUser() {
     const email = getSessionEmail();
-    return email ? findUser(email) : null;
+    const user = email ? findUser(email) : null;
+    if (user && !user.createdAt) {
+      const users = readUsers();
+      const storedUser = users.find((candidate) => normalizeEmail(candidate.email) === normalizeEmail(email));
+      if (storedUser) {
+        storedUser.createdAt = new Date().toISOString();
+        writeUsers(users);
+        user.createdAt = storedUser.createdAt;
+      }
+    }
+    return user;
   }
 
   function isValidEmail(email) {
@@ -81,7 +105,7 @@
    * Daftar akun baru. Otomatis login setelah sukses.
    * @returns {{ok:true,name:string}|{ok:false,error:string,field:string}}
    */
-  function register({ name, email, password, confirmPassword }) {
+  async function register({ name, email, password, confirmPassword }) {
     const cleanName = String(name || '').trim();
     const cleanEmail = normalizeEmail(email);
     const cleanPassword = String(password || '').trim();
@@ -103,8 +127,15 @@
       return { ok: false, error: 'Email ini sudah terdaftar. Coba masuk saja.', field: 'email' };
     }
 
+    let passwordHash;
+    try {
+      passwordHash = await hashPassword(cleanPassword);
+    } catch (error) {
+      return { ok: false, error: error.message, field: 'password' };
+    }
+
     const users = readUsers();
-    users.push({ name: cleanName, email: cleanEmail, password: cleanPassword });
+    users.push({ name: cleanName, email: cleanEmail, passwordHash, createdAt: new Date().toISOString() });
     writeUsers(users);
     setSessionEmail(cleanEmail);
     syncProfileName(cleanName);
@@ -115,7 +146,7 @@
    * Login dengan email + password.
    * @returns {{ok:true}|{ok:false,error:string}}
    */
-  function login({ email, password }) {
+  async function login({ email, password }) {
     const cleanEmail = normalizeEmail(email);
     const cleanPassword = String(password || '').trim();
     const user = findUser(cleanEmail);
@@ -129,8 +160,25 @@
       }
       return { ok: false, error: 'Email atau password salah. Periksa kembali, lalu coba lagi.' };
     }
-    if (user.password !== cleanPassword) {
+    let passwordHash;
+    try {
+      passwordHash = await hashPassword(cleanPassword);
+    } catch (error) {
+      return { ok: false, error: error.message };
+    }
+    const isLegacyPassword = typeof user.password === 'string';
+    if (user.passwordHash !== passwordHash && (!isLegacyPassword || user.password !== cleanPassword)) {
       return { ok: false, error: 'Email atau password salah. Periksa kembali, lalu coba lagi.' };
+    }
+
+    if (isLegacyPassword) {
+      const users = readUsers();
+      const storedUser = users.find((candidate) => normalizeEmail(candidate.email) === cleanEmail);
+      if (storedUser) {
+        delete storedUser.password;
+        storedUser.passwordHash = passwordHash;
+        writeUsers(users);
+      }
     }
 
     setSessionEmail(cleanEmail);
@@ -143,10 +191,17 @@
     window.location.href = 'index.html';
   }
 
+  function clearLocalData() {
+    [USERS_KEY, SESSION_KEY].forEach((key) => {
+      try { localStorage.removeItem(key); } catch (error) { /* ignore */ }
+    });
+  }
+
   window.EnglisifyAuth = {
     register,
     login,
     logout,
+    clearLocalData,
     isLoggedIn,
     getCurrentUser,
   };

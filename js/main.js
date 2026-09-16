@@ -8,6 +8,11 @@
   const PROFILE_KEY = 'englisify-profile'; // { name }
   const SOUND_KEY = 'englisify-sound-enabled'; // '1' | '0'
   const DAILY_GOAL_KEY = 'englisify-daily-goal'; // '10' | '20' | '30' | '50'
+  const SESSION_TARGET_KEY = 'englisify-session-target-minutes';
+  const FLASHCARD_TARGET_KEY = 'englisify-flashcard-target';
+  const FLASHCARD_REDO_KEY = 'englisify-flashcard-redo-limit';
+  const LEVEL_PROGRESS_KEY = 'englisify-level-progress';
+  const LEARNING_STATS_KEY = 'englisify-learning-stats';
   const DEFAULT_NAME = 'Budi Santoso';
 
   function applyTheme(mode) {
@@ -44,24 +49,20 @@
       btn.addEventListener('click', () => setTheme(btn.dataset.mode));
     });
 
-    // Mobile sidebar toggle
+    // One document listener handles mobile dismissal and dropdown dismissal.
     const menuToggle = document.querySelector('.menu-toggle');
     const sidebar = document.querySelector('.sidebar');
     if (menuToggle && sidebar) {
       menuToggle.addEventListener('click', () => sidebar.classList.toggle('open'));
-      document.addEventListener('click', (e) => {
-        if (
-          sidebar.classList.contains('open') &&
-          !sidebar.contains(e.target) &&
-          !menuToggle.contains(e.target)
-        ) {
-          sidebar.classList.remove('open');
-        }
-      });
     }
 
-    // Close any open dropdown menus when clicking outside
     document.addEventListener('click', (e) => {
+      if (
+        sidebar && menuToggle && sidebar.classList.contains('open') &&
+        !sidebar.contains(e.target) && !menuToggle.contains(e.target)
+      ) {
+        sidebar.classList.remove('open');
+      }
       document.querySelectorAll('.dropdown.open').forEach((dd) => {
         if (!dd.parentElement.contains(e.target)) dd.classList.remove('open');
       });
@@ -96,14 +97,216 @@
 
   // Small reusable toast helper, available globally
   window.Englisify = window.Englisify || {};
-  window.Englisify.levels = [
-    { code: 'A1', name: 'Pemula', desc: 'Kosakata dasar & kalimat sederhana.', state: 'done' },
-    { code: 'A2', name: 'Dasar', desc: 'Bahasa Inggris sehari-hari & ekspresi umum.', state: 'done' },
-    { code: 'B1', name: 'Menengah', desc: 'Memahami percakapan dan teks sehari-hari.', state: 'current' },
-    { code: 'B2', name: 'Menengah Atas', desc: 'Berkomunikasi dengan lebih lancar.', state: 'locked' },
-    { code: 'C1', name: 'Mahir', desc: 'Memahami bahasa Inggris kompleks.', state: 'locked' },
-    { code: 'C2', name: 'Master', desc: 'Penguasaan bahasa Inggris tingkat tinggi.', state: 'locked' },
+  // Replace this adapter with an API repository when a backend is introduced.
+  window.Englisify.dataStore = window.Englisify.dataStore || {
+    get(key) {
+      try { return localStorage.getItem(key); } catch (error) { return null; }
+    },
+    set(key, value) {
+      try { localStorage.setItem(key, value); } catch (error) { /* ignore */ }
+    },
+    remove(key) {
+      try { localStorage.removeItem(key); } catch (error) { /* ignore */ }
+    },
+  };
+  const defaultLearningStats = {
+    wordsLearned: 0,
+    todayReviews: 0,
+    averageScore: 0,
+    streakDays: 0,
+    learningSecondsTotal: 0,
+    learningSecondsByDate: {},
+    activityDates: [],
+    activities: [],
+  };
+
+  function getAccountKey(key) {
+    const user = window.EnglisifyAuth && window.EnglisifyAuth.getCurrentUser
+      ? window.EnglisifyAuth.getCurrentUser()
+      : null;
+    const email = user && typeof user.email === 'string' ? user.email.toLowerCase() : 'guest';
+    return `${key}:${email}`;
+  }
+
+  // Account-scoped facade: replace this with API calls when the database is ready.
+  window.Englisify.accountStore = window.Englisify.accountStore || {
+    get(key) {
+      return window.Englisify.dataStore.get(getAccountKey(key));
+    },
+    set(key, value) {
+      window.Englisify.dataStore.set(getAccountKey(key), value);
+    },
+    remove(key) {
+      window.Englisify.dataStore.remove(getAccountKey(key));
+    },
+    getJSON(key, fallback) {
+      try {
+        const raw = this.get(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch (error) {
+        return fallback;
+      }
+    },
+    setJSON(key, value) {
+      this.set(key, JSON.stringify(value));
+    },
+  };
+
+  function getLearningStats() {
+    try {
+      const raw = window.Englisify.dataStore.get(getAccountKey(LEARNING_STATS_KEY));
+      const parsed = raw ? JSON.parse(raw) : {};
+      const source = parsed && typeof parsed === 'object' ? parsed : {};
+      return {
+        ...defaultLearningStats,
+        ...source,
+        learningSecondsByDate: source.learningSecondsByDate && typeof source.learningSecondsByDate === 'object'
+          ? source.learningSecondsByDate : {},
+        activityDates: Array.isArray(source.activityDates) ? source.activityDates : [],
+        activities: Array.isArray(source.activities) ? source.activities : [],
+      };
+    } catch (error) {
+      return { ...defaultLearningStats, activityDates: [], activities: [] };
+    }
+  }
+
+  function saveLearningStats(patch) {
+    const current = getLearningStats();
+    const next = { ...current, ...patch };
+    window.Englisify.dataStore.set(getAccountKey(LEARNING_STATS_KEY), JSON.stringify(next));
+    return next;
+  }
+
+  window.Englisify.getLearningStats = getLearningStats;
+  window.Englisify.saveLearningStats = saveLearningStats;
+  window.Englisify.getSessionTargetMinutes = function () {
+    const value = Number(window.Englisify.dataStore.get(getAccountKey(SESSION_TARGET_KEY)));
+    return [10, 20, 30, 50].includes(value) ? value : 20;
+  };
+  window.Englisify.setSessionTargetMinutes = function (value) {
+    if ([10, 20, 30, 50].includes(Number(value))) {
+      window.Englisify.dataStore.set(getAccountKey(SESSION_TARGET_KEY), String(value));
+    }
+  };
+  window.Englisify.getFlashcardTarget = function () {
+    const value = Number(window.Englisify.dataStore.get(getAccountKey(FLASHCARD_TARGET_KEY)));
+    return [10, 20, 30, 50].includes(value) ? value : 20;
+  };
+  window.Englisify.setFlashcardTarget = function (value) {
+    if ([10, 20, 30, 50].includes(Number(value))) {
+      window.Englisify.dataStore.set(getAccountKey(FLASHCARD_TARGET_KEY), String(value));
+    }
+  };
+  window.Englisify.getFlashcardRedoLimit = function () {
+    const value = Number(window.Englisify.dataStore.get(getAccountKey(FLASHCARD_REDO_KEY)));
+    return [0, 10, 20, 30].includes(value) ? value : 10;
+  };
+  window.Englisify.setFlashcardRedoLimit = function (value) {
+    if ([0, 10, 20, 30].includes(Number(value))) {
+      window.Englisify.dataStore.set(getAccountKey(FLASHCARD_REDO_KEY), String(value));
+    }
+  };
+  window.Englisify.recordLearningSession = function (feature, durationSeconds) {
+    const now = new Date();
+    const dateKey = now.toDateString();
+    const seconds = Math.max(1, Math.min(8 * 60 * 60, Math.round(Number(durationSeconds) || 0)));
+    const stats = getLearningStats();
+    const secondsByDate = { ...stats.learningSecondsByDate };
+    secondsByDate[dateKey] = (Number(secondsByDate[dateKey]) || 0) + seconds;
+    const activityDates = [...new Set([...stats.activityDates, dateKey])].slice(-365);
+    const activities = [...stats.activities, {
+      feature,
+      title: {
+        flashcard: 'Belajar melalui Flashcard',
+        reading: 'Mengerjakan Reading Test',
+        exam: 'Mengerjakan Ujian Level',
+        vocabulary: 'Mempelajari Kosakata',
+      }[feature] || 'Belajar di Englisify',
+      seconds,
+      at: now.toISOString(),
+      time: 'Hari ini',
+    }].slice(-20);
+    let streakDays = 0;
+    const activeDates = new Set(activityDates);
+    const cursor = new Date(now);
+    cursor.setHours(0, 0, 0, 0);
+    while (activeDates.has(cursor.toDateString())) {
+      streakDays++;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    saveLearningStats({
+      learningSecondsTotal: (Number(stats.learningSecondsTotal) || 0) + seconds,
+      learningSecondsByDate: secondsByDate,
+      activityDates,
+      activities,
+      streakDays,
+    });
+  };
+  window.Englisify.startLearningSession = function (feature) {
+    const startedAt = Date.now();
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      window.Englisify.recordLearningSession(feature, (Date.now() - startedAt) / 1000);
+    };
+    window.addEventListener('pagehide', finish, { once: true });
+    return finish;
+  };
+  window.Englisify.getAccountStartDate = function () {
+    const user = window.EnglisifyAuth && window.EnglisifyAuth.getCurrentUser
+      ? window.EnglisifyAuth.getCurrentUser()
+      : null;
+    const date = user && user.createdAt ? new Date(user.createdAt) : new Date();
+    return Number.isNaN(date.getTime()) ? new Date() : date;
+  };
+  const LEVEL_DEFINITIONS = [
+    { code: 'A1', name: 'Pemula', desc: 'Kosakata dasar & kalimat sederhana.' },
+    { code: 'A2', name: 'Dasar', desc: 'Bahasa Inggris sehari-hari & ekspresi umum.' },
+    { code: 'B1', name: 'Menengah', desc: 'Memahami percakapan dan teks sehari-hari.' },
+    { code: 'B2', name: 'Menengah Atas', desc: 'Berkomunikasi dengan lebih lancar.' },
+    { code: 'C1', name: 'Mahir', desc: 'Memahami bahasa Inggris kompleks.' },
+    { code: 'C2', name: 'Master', desc: 'Penguasaan bahasa Inggris tingkat tinggi.' },
   ];
+
+  function readLevelProgress() {
+    try {
+      const parsed = JSON.parse(window.Englisify.dataStore.get(LEVEL_PROGRESS_KEY) || '{}');
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (error) {
+      return {};
+    }
+  }
+
+  function writeLevelProgress(progress) {
+    window.Englisify.dataStore.set(LEVEL_PROGRESS_KEY, JSON.stringify(progress));
+  }
+
+  function getLevels() {
+    const progress = readLevelProgress();
+    const unlockedIndex = Math.min(
+      LEVEL_DEFINITIONS.length - 1,
+      Math.max(0, Number.isInteger(progress.unlockedIndex) ? progress.unlockedIndex : 0),
+    );
+    return LEVEL_DEFINITIONS.map((level, index) => ({
+      ...level,
+      state: index < unlockedIndex ? 'done' : index === unlockedIndex ? 'current' : 'locked',
+    }));
+  }
+
+  window.Englisify.levels = getLevels();
+  window.Englisify.getLevels = getLevels;
+  window.Englisify.unlockNextLevel = function (code) {
+    const index = LEVEL_DEFINITIONS.findIndex((level) => level.code === code);
+    if (index < 0) return getLevels();
+    const progress = readLevelProgress();
+    const nextIndex = Math.min(LEVEL_DEFINITIONS.length - 1, index + 1);
+    if ((Number.isInteger(progress.unlockedIndex) ? progress.unlockedIndex : 0) <= nextIndex) {
+      writeLevelProgress({ unlockedIndex: nextIndex });
+    }
+    window.Englisify.levels = getLevels();
+    return window.Englisify.levels;
+  };
   window.Englisify.escapeHtml = function (value) {
     return String(value).replace(/[&<>"']/g, (character) => ({
       '&': '&amp;',
@@ -164,8 +367,10 @@
   window.Englisify.applyProfileToPage = function () {
     const profile = window.Englisify.getProfile();
     const initials = window.Englisify.getInitials(profile.name);
+    const currentLevel = window.Englisify.getLevels().find((level) => level.state === 'current');
     document.querySelectorAll('.u-name').forEach((el) => { el.textContent = profile.name; });
     document.querySelectorAll('.avatar').forEach((el) => { el.textContent = initials; });
+    document.querySelectorAll('.u-level').forEach((el) => { el.textContent = `Level ${currentLevel.code}`; });
   };
 
   /* ------------------------------------------------------------------
@@ -213,8 +418,11 @@
      di halaman Pengaturan).
      ------------------------------------------------------------------ */
   window.Englisify.resetAllLocalData = function () {
-    [STORAGE_KEY, PROFILE_KEY, SOUND_KEY, DAILY_GOAL_KEY, 'englisify-selected-level'].forEach((key) => {
+    [STORAGE_KEY, PROFILE_KEY, SOUND_KEY, DAILY_GOAL_KEY, getAccountKey(SESSION_TARGET_KEY), getAccountKey(FLASHCARD_TARGET_KEY), getAccountKey(FLASHCARD_REDO_KEY), LEVEL_PROGRESS_KEY, getAccountKey(LEARNING_STATS_KEY), getAccountKey('englisify-vocabulary'), 'englisify-selected-level'].forEach((key) => {
       try { localStorage.removeItem(key); } catch (error) { /* ignore */ }
     });
+    if (window.EnglisifyAuth && typeof window.EnglisifyAuth.clearLocalData === 'function') {
+      window.EnglisifyAuth.clearLocalData();
+    }
   };
 })();

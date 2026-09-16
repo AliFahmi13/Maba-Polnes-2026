@@ -3,7 +3,8 @@
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
-  const levels = window.Englisify.levels;
+  window.Englisify.startLearningSession('exam');
+  let levels = window.Englisify.getLevels();
 
   const examMeta = {
     A1: { total: 20, time: '± 12 menit', pass: 60, next: 'A2' },
@@ -59,25 +60,24 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>`;
     }).join('');
 
-    grid.querySelectorAll('.level-card').forEach((card) => {
-      card.addEventListener('click', () => {
-        const code = card.dataset.code;
-        const state = card.dataset.state;
-        if (state === 'locked') {
-          window.Englisify.toast(`Selesaikan level sebelumnya untuk membuka ${code}`);
-          return;
-        }
-        activeLevel = code;
-        renderIntro();
-        showStep(stepIntro);
-      });
-    });
   }
+
+  document.getElementById('levelGrid').addEventListener('click', (event) => {
+    const card = event.target.closest('.level-card');
+    if (!card) return;
+    const code = card.dataset.code;
+    if (card.dataset.state === 'locked') {
+      window.Englisify.toast(`Selesaikan level sebelumnya untuk membuka ${code}`);
+      return;
+    }
+    activeLevel = code;
+    renderIntro();
+    showStep(stepIntro);
+  });
 
   /* ---------- Step 2: exam intro ---------- */
   function renderIntro() {
     const meta = examMeta[activeLevel];
-    const level = levels.find((l) => l.code === activeLevel);
     document.getElementById('introTitle').textContent = `Ujian Level ${activeLevel}`;
     const grid = document.querySelector('#stepIntro .exam-info-grid');
     grid.innerHTML = `
@@ -128,38 +128,38 @@ document.addEventListener('DOMContentLoaded', () => {
       <button class="btn btn-primary mt-4" id="examAction" disabled>Jawab</button>
     `;
 
-    const optList = document.getElementById('examOptList');
-    const actionBtn = document.getElementById('examAction');
-
-    optList.querySelectorAll('.option').forEach((opt) => {
-      opt.addEventListener('click', () => {
-        if (answered) return;
-        optList.querySelectorAll('.option').forEach((o) => o.classList.remove('selected'));
-        opt.classList.add('selected');
-        selected = Number(opt.dataset.idx);
-        actionBtn.disabled = false;
-      });
-    });
-
-    actionBtn.addEventListener('click', () => {
-      if (!answered) {
-        answered = true;
-        userAnswers.push(selected);
-        optList.querySelectorAll('.option').forEach((o) => {
-          o.classList.add('disabled');
-          const idx = Number(o.dataset.idx);
-          if (idx === item.correct) o.classList.add('correct');
-          else if (idx === selected) o.classList.add('wrong');
-        });
-        actionBtn.textContent = current === examQuestions.length - 1 ? 'Lihat Hasil' : 'Soal Berikutnya';
-      } else if (current < examQuestions.length - 1) {
-        current++;
-        renderExamQuestion();
-      } else {
-        showExamResult();
-      }
-    });
   }
+
+  document.getElementById('examCard').addEventListener('click', (event) => {
+    const opt = event.target.closest('.option');
+    const actionBtn = event.target.closest('#examAction');
+    const optList = document.getElementById('examOptList');
+    if (opt && !answered) {
+      optList.querySelectorAll('.option').forEach((option) => option.classList.remove('selected'));
+      opt.classList.add('selected');
+      selected = Number(opt.dataset.idx);
+      document.getElementById('examAction').disabled = false;
+      return;
+    }
+    if (!actionBtn || actionBtn.disabled) return;
+    const item = examQuestions[current];
+    if (!answered) {
+      answered = true;
+      userAnswers.push(selected);
+      optList.querySelectorAll('.option').forEach((option) => {
+        option.classList.add('disabled');
+        const idx = Number(option.dataset.idx);
+        if (idx === item.correct) option.classList.add('correct');
+        else if (idx === selected) option.classList.add('wrong');
+      });
+      actionBtn.textContent = current === examQuestions.length - 1 ? 'Lihat Hasil' : 'Soal Berikutnya';
+    } else if (current < examQuestions.length - 1) {
+      current++;
+      renderExamQuestion();
+    } else {
+      showExamResult();
+    }
+  });
 
   /* ---------- Step 4: result ---------- */
   function showExamResult() {
@@ -227,10 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const nextBtn = document.getElementById('btnNextLevel');
     if (nextBtn) {
       nextBtn.addEventListener('click', () => {
-        const lvl = levels.find((l) => l.code === activeLevel);
-        const nextLvl = levels.find((l) => l.code === meta.next);
-        if (lvl) lvl.state = 'done';
-        if (nextLvl) nextLvl.state = 'current';
+        levels = window.Englisify.unlockNextLevel(activeLevel);
         window.Englisify.toast(`Level ${meta.next} telah dibuka!`);
         renderLevelGrid();
         showStep(stepSelect);

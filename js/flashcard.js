@@ -4,12 +4,12 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
+  window.Englisify.startLearningSession('flashcard');
+
   /* ------------------------------------------------------------------
      Level metadata — konsisten dengan Beranda & Ujian Level.
      state: 'done' | 'current' | 'locked'
      ------------------------------------------------------------------ */
-  const LEVELS = window.Englisify.levels;
-
   /* ------------------------------------------------------------------
      Bank kata per level — TIDAK PERNAH dimutasi langsung.
      Setiap kali sesi dimulai, kita bikin SALINAN lalu diacak.
@@ -79,6 +79,33 @@ document.addEventListener('DOMContentLoaded', () => {
     ],
   };
 
+  const localFlashcardRepository = {
+    getByLevel(levelCode) {
+      return WORD_BANK[levelCode] || [];
+    },
+    getAll() {
+      const builtInCards = Object.values(WORD_BANK).flatMap((cards) => cards.map((card) => ({ ...card })));
+      const builtInWords = new Set(builtInCards.map((card) => card.word.toLowerCase()));
+      const storedVocabulary = window.Englisify.accountStore.getJSON('englisify-vocabulary', []);
+      const customCards = Array.isArray(storedVocabulary)
+        ? storedVocabulary
+          .filter((card) => card && typeof card.word === 'string' && typeof card.meaning === 'string')
+          .filter((card) => !builtInWords.has(card.word.trim().toLowerCase()))
+          .map((card) => ({
+            word: card.word.trim(),
+            ipa: card.ipa || '',
+            type: card.type || 'noun',
+            typeLabel: { noun: 'kata benda', verb: 'kata kerja', adjective: 'kata sifat' }[card.type] || 'kata benda',
+            meaning: card.meaning.trim(),
+            example: card.example || `"${card.word.trim()}"`,
+          }))
+        : [];
+      return [...builtInCards, ...customCards];
+    },
+  };
+  const flashcardRepository = window.Englisify.flashcardRepository || localFlashcardRepository;
+  window.Englisify.flashcardRepository = flashcardRepository;
+
   /* ------------------------------------------------------------------
      Util: Fisher-Yates shuffle yang TIDAK memutasi array asli.
      ------------------------------------------------------------------ */
@@ -94,16 +121,16 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ------------------------------------------------------------------
      State
      ------------------------------------------------------------------ */
-  let selectedLevel = null;
   let deck = [];
   let index = 0;
   let flipped = false;
+  let redoCount = 0;
+  let redoLimit = window.Englisify.getFlashcardRedoLimit();
   const favorites = new Set();
 
   const el = (id) => document.getElementById(id);
   const stepLevel = el('fcStepLevel');
   const stepDeck = el('fcStepDeck');
-  const levelGrid = el('fcLevelGrid');
   const startBtn = el('fcStartBtn');
   const levelBadge = el('fcLevelBadge');
   const emptyState = el('fcEmptyState');
@@ -116,42 +143,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const countEl = el('fcCount'), barEl = el('fcProgressBar');
   const favBtn = el('fcFavBtn'), audioBtn = el('fcAudioBtn');
   const active = el('fcActive'), done = el('fcDone');
+  const sessionSummary = el('fcSessionSummary');
 
-  /* ---------------- STEP 1: pilih level ---------------- */
-  const lockIcon = `<svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>`;
-
-  function renderLevelGrid() {
-    levelGrid.innerHTML = LEVELS.map((lv) => {
-      const cls = ['card', 'level-card'];
-      if (lv.state === 'locked') cls.push('locked');
-      if (lv.code === selectedLevel) cls.push('selected');
-      const badgeContent = lv.state === 'locked' ? lockIcon : lv.code;
-      return `
-        <div class="${cls.join(' ')}" data-code="${lv.code}" data-state="${lv.state}">
-          <div class="lv-top"><div class="lv-badge">${badgeContent}</div></div>
-          <div class="lv-title">${lv.code} · ${lv.name}</div>
-          <div class="lv-desc">${lv.desc}</div>
-        </div>`;
-    }).join('');
-
-    levelGrid.querySelectorAll('.level-card').forEach((cardEl) => {
-      cardEl.addEventListener('click', () => {
-        const code = cardEl.dataset.code;
-        const state = cardEl.dataset.state;
-        if (state === 'locked') {
-          window.Englisify.toast(`Selesaikan level sebelumnya untuk membuka ${code}`);
-          return;
-        }
-        selectedLevel = code;
-        renderLevelGrid();
-        startBtn.disabled = false;
-      });
-    });
+  function renderSessionSummary() {
+    const target = window.Englisify.getFlashcardTarget();
+    const redo = window.Englisify.getFlashcardRedoLimit();
+    if (sessionSummary) sessionSummary.textContent = `${target} kartu utama · ${redo} kartu ulang maksimal`;
   }
 
   startBtn.addEventListener('click', () => {
-    if (!selectedLevel) return;
-    beginSession(selectedLevel);
+    beginSession();
   });
 
   el('fcBackToLevel').addEventListener('click', () => {
@@ -166,14 +167,17 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* ---------------- STEP 2: sesi flashcard ---------------- */
-  function beginSession(levelCode) {
-    const bank = WORD_BANK[levelCode] || [];
-    levelBadge.textContent = levelCode;
+  function beginSession() {
+    const bank = flashcardRepository.getAll();
+    const targetCount = window.Englisify.getFlashcardTarget();
+    levelBadge.textContent = 'Semua Level';
     stepLevel.classList.add('hidden');
     stepDeck.classList.remove('hidden');
     done.classList.add('hidden');
     favorites.clear();
     index = 0;
+    redoCount = 0;
+    redoLimit = window.Englisify.getFlashcardRedoLimit();
 
     if (bank.length === 0) {
       emptyState.classList.remove('hidden');
@@ -187,7 +191,12 @@ document.addEventListener('DOMContentLoaded', () => {
     active.classList.remove('hidden');
 
     // Salin lalu acak urutan kartu — data asli (WORD_BANK) tidak diubah.
-    deck = shuffle(bank);
+    deck = [];
+    let source = shuffle(bank);
+    while (deck.length < targetCount) {
+      if (source.length === 0) source = shuffle(bank);
+      deck.push(source.shift());
+    }
     render();
   }
 
@@ -218,6 +227,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (newIndex >= deck.length) {
       active.classList.add('hidden');
       done.classList.remove('hidden');
+      const doneSummary = el('fcDoneSummary');
+      if (doneSummary) doneSummary.textContent = `Kamu sudah mereview ${deck.length} kartu. Kerja bagus!`;
       return;
     }
     index = newIndex;
@@ -225,8 +236,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   card.addEventListener('click', flip);
-  el('fcPrev').addEventListener('click', () => goTo(index - 1));
-  el('fcNext').addEventListener('click', () => goTo(index + 1));
 
   favBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -255,22 +264,23 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.rate-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       const labels = { forgot: 'Ditandai: Lupa', hard: 'Ditandai: Sulit', good: 'Ditandai: Ingat', easy: 'Ditandai: Mudah' };
+      if ((btn.dataset.rate === 'forgot' || btn.dataset.rate === 'hard') && redoCount < redoLimit) {
+        deck.push(deck[index]);
+        redoCount++;
+      }
       window.Englisify.toast(labels[btn.dataset.rate]);
       goTo(index + 1);
     });
   });
 
   el('fcRestart').addEventListener('click', () => {
-    // Mulai ulang level yang sama dengan urutan baru (di-shuffle ulang).
-    beginSession(selectedLevel);
+    beginSession();
   });
 
   document.addEventListener('keydown', (e) => {
     if (stepDeck.classList.contains('hidden') || active.classList.contains('hidden')) return;
-    if (e.key === 'ArrowLeft') goTo(index - 1);
-    if (e.key === 'ArrowRight') goTo(index + 1);
     if (e.key === ' ') { e.preventDefault(); flip(); }
   });
 
-  renderLevelGrid();
+  renderSessionSummary();
 });

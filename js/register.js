@@ -42,11 +42,11 @@
     input.addEventListener('input', hideError);
   });
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     hideError();
 
-    const result = window.EnglisifyAuth.register({
+    const result = await window.EnglisifyAuth.register({
       name: fields.name.value,
       email: fields.email.value,
       password: fields.password.value,

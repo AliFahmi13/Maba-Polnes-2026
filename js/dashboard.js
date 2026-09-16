@@ -19,6 +19,51 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const levels = window.Englisify.levels;
+  const stats = window.Englisify.getLearningStats();
+  const currentLevel = levels.find((level) => level.state === 'current') || levels[0];
+  const todayKey = new Date().toDateString();
+  const todaySeconds = Number(stats.learningSecondsByDate[todayKey]) || 0;
+  const targetMinutes = window.Englisify.getSessionTargetMinutes();
+  const todayMinutes = Math.floor(todaySeconds / 60);
+  const progressPercent = Math.min(100, Math.round((todaySeconds / (targetMinutes * 60)) * 100));
+
+  const progressEl = document.getElementById('dashProgress');
+  const progressLabelEl = document.getElementById('dashProgressLabel');
+  const reviewCountEl = document.getElementById('dashReviewCount');
+  const reviewEstimateEl = document.getElementById('dashReviewEstimate');
+  if (progressEl) progressEl.style.width = `${progressPercent}%`;
+  if (progressLabelEl) progressLabelEl.textContent = `${todayMinutes}/${targetMinutes} menit · Level ${currentLevel.code} · ${currentLevel.name}`;
+  if (reviewCountEl) reviewCountEl.textContent = `${todayMinutes} menit waktu belajar`;
+  if (reviewEstimateEl) reviewEstimateEl.textContent = `Target sesi: ${targetMinutes} menit`;
+  const dashboardValues = {
+    dashWordsLearned: stats.wordsLearned,
+    dashReviews: todayMinutes,
+    dashAverageScore: `${stats.averageScore}%`,
+    dashCurrentLevel: currentLevel.code,
+  };
+  Object.entries(dashboardValues).forEach(([id, value]) => {
+    const element = document.getElementById(id);
+    if (element) element.textContent = value;
+  });
+  const dashStreak = document.getElementById('dashStreak');
+  if (dashStreak) dashStreak.textContent = `${stats.streakDays} Hari Berturut-turut`;
+  const dashLevelBadge = document.getElementById('dashLevelBadge');
+  if (dashLevelBadge) dashLevelBadge.textContent = currentLevel.code;
+  const dashCalendarStreak = document.getElementById('dashCalendarStreak');
+  if (dashCalendarStreak) dashCalendarStreak.textContent = `${stats.streakDays} hari`;
+
+  const recommendationCard = document.getElementById('dashRecommendation');
+  const recent = stats.activities[stats.activities.length - 1];
+  if (recommendationCard && recent) {
+    const destinations = { flashcard: 'flashcard.html', reading: 'reading-test.html', exam: 'ujian-level.html', vocabulary: 'kosakata.html' };
+    const recentTitle = document.getElementById('dashRecommendationTitle');
+    const recentSub = document.getElementById('dashRecommendationSub');
+    const recentLink = document.getElementById('dashRecommendationLink');
+    if (recentTitle) recentTitle.textContent = recent.title;
+    if (recentSub) recentSub.textContent = `Terakhir digunakan ${recent.seconds} detik`;
+    if (recentLink) recentLink.href = destinations[recent.feature] || 'flashcard.html';
+    recommendationCard.hidden = false;
+  }
 
   const checkIcon = `<svg class="icon" viewBox="0 0 24 24" stroke="#12b76a"><path d="M20 6 9 17l-5-5"/></svg>`;
   const lockIcon = `<svg class="icon" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>`;
@@ -49,21 +94,16 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
   }).join('');
 
-  list.querySelectorAll('.level-item').forEach((el) => {
-    el.addEventListener('click', () => {
-      const state = el.dataset.state;
-      const code = el.dataset.code;
-      if (state === 'locked') {
-        window.Englisify.toast(`Selesaikan level sebelumnya untuk membuka ${code}`);
-        return;
-      }
-      // Remember which level was picked, then head to the exam hub
-      try {
-        localStorage.setItem('englisify-selected-level', code);
-      } catch (error) {
-        // Navigation still works when browser storage is unavailable.
-      }
-      window.location.href = 'ujian-level.html';
-    });
+  list.addEventListener('click', (event) => {
+    const item = event.target.closest('.level-item');
+    if (!item) return;
+    const state = item.dataset.state;
+    const code = item.dataset.code;
+    if (state === 'locked') {
+      window.Englisify.toast(`Selesaikan level sebelumnya untuk membuka ${code}`);
+      return;
+    }
+    window.Englisify.dataStore.set('englisify-selected-level', code);
+    window.location.href = 'ujian-level.html';
   });
 });

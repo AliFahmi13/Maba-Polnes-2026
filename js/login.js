@@ -22,11 +22,11 @@
     input.addEventListener('input', hideError);
   });
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     hideError();
 
-    const result = window.EnglisifyAuth.login({
+    const result = await window.EnglisifyAuth.login({
       email: emailInput.value,
       password: passwordInput.value,
     });

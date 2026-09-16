@@ -3,9 +3,11 @@
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
+  window.Englisify.startLearningSession('vocabulary');
   const typeLabels = { noun: 'kata benda', verb: 'kata kerja', adjective: 'kata sifat' };
+  const VOCABULARY_KEY = 'englisify-vocabulary';
 
-  let vocab = [
+  const defaultVocab = [
     { word: 'departure', meaning: 'keberangkatan', type: 'noun', last: 'Hari ini', next: '1 hari', status: 'review' },
     { word: 'reliable', meaning: 'dapat dipercaya', type: 'adjective', last: 'Besok', next: '3 hari', status: 'dipelajari' },
     { word: 'neighborhood', meaning: 'lingkungan/tempat tinggal', type: 'noun', last: '3 hari lalu', next: '7 hari', status: 'dipelajari' },
@@ -17,6 +19,27 @@ document.addEventListener('DOMContentLoaded', () => {
     { word: 'patient', meaning: 'sabar', type: 'adjective', last: '4 hari lalu', next: '10 hari', status: 'dipelajari' },
     { word: 'achieve', meaning: 'mencapai', type: 'verb', last: '1 hari lalu', next: '5 hari', status: 'dipelajari' },
   ];
+
+  function normalizeVocabulary(items) {
+    if (!Array.isArray(items)) return defaultVocab.map((item) => ({ ...item }));
+    return items
+      .filter((item) => item && typeof item.word === 'string' && typeof item.meaning === 'string')
+      .map((item) => ({
+        word: item.word.trim(),
+        meaning: item.meaning.trim(),
+        type: Object.prototype.hasOwnProperty.call(typeLabels, item.type) ? item.type : 'noun',
+        last: typeof item.last === 'string' ? item.last : 'Hari ini',
+        next: typeof item.next === 'string' ? item.next : '1 hari',
+        status: item.status === 'dipelajari' ? 'dipelajari' : 'review',
+      }))
+      .filter((item) => item.word && item.meaning);
+  }
+
+  let vocab = normalizeVocabulary(window.Englisify.accountStore.getJSON(VOCABULARY_KEY, defaultVocab));
+
+  function persistVocabulary() {
+    window.Englisify.accountStore.setJSON(VOCABULARY_KEY, vocab);
+  }
 
   let currentFilter = 'semua';
   let searchTerm = '';
@@ -124,11 +147,13 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (action === 'mark') {
           vocab[idx].status = 'dipelajari';
           vocab[idx].next = '14 hari';
+          persistVocabulary();
           window.Englisify.toast(`"${vocab[idx].word}" ditandai sudah dipelajari`);
           render();
         } else if (action === 'delete') {
           const removed = vocab[idx].word;
           vocab.splice(idx, 1);
+          persistVocabulary();
           window.Englisify.toast(`"${removed}" dihapus dari daftar kosakata`);
           render();
         }
@@ -164,7 +189,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const meaning = document.getElementById('fMeaning').value.trim();
     const type = document.getElementById('fType').value;
     if (!word || !meaning) return;
-    vocab.unshift({ word, meaning, type, last: 'Hari ini', next: '1 hari', status: 'review' });
+    vocab.unshift({ word, meaning, type, last: 'Hari ini', next: '1 hari', status: 'review', source: 'custom' });
+    persistVocabulary();
     e.target.reset();
     overlay.classList.remove('open');
     currentFilter = 'semua';

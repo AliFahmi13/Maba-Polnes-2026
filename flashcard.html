@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self';">
+<script src="js/theme-init.js"></script>
 <title>Englisify — Flashcard</title>
 <link rel="stylesheet" href="css/style.css">
 <script src="js/auth.js" data-guard="protected"></script>
@@ -32,9 +33,6 @@
       <li><a class="nav-link" href="kosakata.html">
         <svg class="icon" viewBox="0 0 24 24"><path d="M4 19V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 19a2 2 0 0 1 2-2h13"/></svg>
         Kosakata</a></li>
-      <li><a class="nav-link" href="kalender.html">
-        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-        Kalender</a></li>
       <li><a class="nav-link" href="ujian-level.html">
         <svg class="icon" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5z"/></svg>
         Ujian Level</a></li>
@@ -90,13 +88,31 @@
 
     <main class="content">
 
-      <!-- STEP 1: pilih level -->
+      <!-- STEP 1: mulai sesi global -->
       <section id="fcStepLevel">
-        <div class="page-head"><h1>Pilih Level Flashcard</h1></div>
-        <p class="sub" style="margin-bottom:20px;">Pilih level sesuai kemampuanmu, setiap level punya kumpulan kartu yang berbeda.</p>
-        <div class="level-grid" id="fcLevelGrid"></div>
-        <div style="max-width:320px;margin-top:22px;">
-          <button class="btn btn-primary btn-block" id="fcStartBtn" disabled>Mulai Flashcard</button>
+        <div class="page-head"><h1>Flashcard Kosakata</h1></div>
+        <p class="sub" style="margin-bottom:20px;">Latih seluruh katalog kosakata dalam satu sesi yang bisa kamu atur sendiri.</p>
+        <div class="card card-pad flash-session-summary">
+          <div class="card-title">Sesi global</div>
+          <p class="sub" id="fcSessionSummary">20 kartu utama · 10 kartu ulang maksimal</p>
+          <button class="btn btn-primary btn-block" id="fcStartBtn">Mulai Flashcard</button>
+        </div>
+        <div class="card card-pad flash-how-it-works">
+          <div class="card-title">Cara kerja sesi</div>
+          <div class="flash-how-grid">
+            <div class="flash-how-item">
+              <span class="flash-how-number">1</span>
+              <div><strong>Pilih dari katalog global</strong><p>Kartu diambil dari semua kosakata, bukan dari satu level.</p></div>
+            </div>
+            <div class="flash-how-item">
+              <span class="flash-how-number">2</span>
+              <div><strong>Capai target kartu</strong><p>Jumlah kartu utama mengikuti pengaturan sesi kamu.</p></div>
+            </div>
+            <div class="flash-how-item">
+              <span class="flash-how-number">3</span>
+              <div><strong>Ulangi yang sulit</strong><p>Kartu Lupa atau Sulit masuk antrean ulang sampai batasnya tercapai.</p></div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -107,7 +123,7 @@
         <div class="page-head" style="margin-bottom:16px;">
           <span class="back-link" id="fcBackToLevel">
             <svg class="icon" viewBox="0 0 24 24" style="width:15px;height:15px;"><path d="m15 18-6-6 6-6"/></svg>
-            Ganti Level
+            Kembali ke Ringkasan
           </span>
           <span class="badge" id="fcLevelBadge" style="margin-left:auto;">B1</span>
         </div>
@@ -123,10 +139,6 @@
 
         <div id="fcActive">
           <div class="flash-stage">
-            <button class="flip-btn" id="fcPrev" aria-label="Kata sebelumnya">
-              <svg class="icon" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
-            </button>
-
             <div class="flashcard" id="flashcard">
               <div class="fc-face fc-front visible" id="fcFront">
                 <div class="word-row">
@@ -158,9 +170,6 @@
               </div>
             </div>
 
-            <button class="flip-btn" id="fcNext" aria-label="Kata berikutnya">
-              <svg class="icon" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-            </button>
           </div>
 
           <p class="flash-caption">Seberapa baik kamu mengingat kata ini?</p>
@@ -178,10 +187,10 @@
             <svg class="icon" viewBox="0 0 24 24" width="34" height="34"><path d="M20 6 9 17l-5-5"/></svg>
           </div>
           <h2 style="font-size:19px;font-weight:700;margin-bottom:8px;">Selesai untuk hari ini! 🎉</h2>
-          <p style="color:var(--text-secondary);font-size:14px;margin-bottom:22px;">Kamu sudah mereview 20 kata. Kerja bagus!</p>
+          <p id="fcDoneSummary" style="color:var(--text-secondary);font-size:14px;margin-bottom:22px;">Kamu sudah mereview kartu. Kerja bagus!</p>
           <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-            <button class="btn btn-outline" id="fcRestart">Ulangi Level Ini</button>
-            <button class="btn btn-outline" id="fcChooseAnother">Pilih Level Lain</button>
+            <button class="btn btn-outline" id="fcRestart">Ulangi Sesi Ini</button>
+            <button class="btn btn-outline" id="fcChooseAnother">Ubah Pengaturan</button>
             <a href="beranda.html" class="btn btn-primary">Kembali ke Beranda</a>
           </div>
         </div>

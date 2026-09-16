@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self';">
+<script src="js/theme-init.js"></script>
 <title>Englisify — Beranda</title>
 <link rel="stylesheet" href="css/style.css">
 <script src="js/auth.js" data-guard="protected"></script>
@@ -34,9 +35,6 @@
       <li><a class="nav-link" href="kosakata.html">
         <svg class="icon" viewBox="0 0 24 24"><path d="M4 19V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 19a2 2 0 0 1 2-2h13"/></svg>
         Kosakata</a></li>
-      <li><a class="nav-link" href="kalender.html">
-        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-        Kalender</a></li>
       <li><a class="nav-link" href="ujian-level.html">
         <svg class="icon" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5z"/></svg>
         Ujian Level</a></li>
@@ -117,11 +115,11 @@
                 </div>
                 <div>
                   <div class="t">Progress Belajar</div>
-                  <div class="s">8 Hari Berturut-turut</div>
+                  <div class="s" id="dashStreak">0 Hari Berturut-turut</div>
                 </div>
               </div>
-              <div class="progress"><span id="dashProgress" style="width:62%"></span></div>
-              <div class="mini-foot" id="dashProgressLabel">62% &nbsp;·&nbsp; Level B1 · Menengah</div>
+              <div class="progress"><span id="dashProgress" style="width:0%"></span></div>
+              <div class="mini-foot" id="dashProgressLabel">0% &nbsp;·&nbsp; Level A1 · Pemula</div>
             </div>
 
             <div class="card mini-card">
@@ -130,12 +128,12 @@
                   <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="14" height="16" rx="2"/><path d="M17 8h4v12H7"/></svg>
                 </div>
                 <div>
-                  <div class="t">Review Hari Ini</div>
-                  <div class="s">12 kata perlu diulang</div>
+                  <div class="t">Sesi Belajar Hari Ini</div>
+                  <div class="s" id="dashReviewCount">0 menit waktu belajar</div>
                 </div>
               </div>
-              <div class="mini-foot">Estimasi waktu: ±8 menit</div>
-              <a href="flashcard.html" class="btn btn-primary btn-block">Mulai Review</a>
+              <div class="mini-foot" id="dashReviewEstimate">Target sesi: 20 menit</div>
+              <a href="flashcard.html" class="btn btn-primary btn-block">Mulai Belajar</a>
             </div>
           </div>
 
@@ -143,22 +141,22 @@
           <div class="stats-grid">
             <div class="card stat-card c-blue">
               <div class="stat-ico"><svg class="icon" viewBox="0 0 24 24" stroke="#fff"><path d="M4 19V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/></svg></div>
-              <div class="stat-num">428</div>
+              <div class="stat-num" id="dashWordsLearned">0</div>
               <div class="stat-label">Kata Dipelajari</div>
             </div>
             <div class="card stat-card c-purple">
               <div class="stat-ico"><svg class="icon" viewBox="0 0 24 24" stroke="#fff"><rect x="3" y="4" width="14" height="16" rx="2"/><path d="M17 8h4v12H7"/></svg></div>
-              <div class="stat-num">12</div>
-              <div class="stat-label">Review Hari Ini</div>
+              <div class="stat-num" id="dashReviews">0</div>
+              <div class="stat-label">Menit Belajar Hari Ini</div>
             </div>
             <div class="card stat-card c-green">
               <div class="stat-ico"><svg class="icon" viewBox="0 0 24 24" stroke="#fff"><path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5z"/></svg></div>
-              <div class="stat-num">84%</div>
+              <div class="stat-num" id="dashAverageScore">0%</div>
               <div class="stat-label">Nilai Rata-rata</div>
             </div>
             <div class="card stat-card c-amber">
               <div class="stat-ico"><svg class="icon" viewBox="0 0 24 24" stroke="#fff"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 2v4M16 2v4"/></svg></div>
-              <div class="stat-num">B1</div>
+              <div class="stat-num" id="dashCurrentLevel">A1</div>
               <div class="stat-label">Level Saat Ini</div>
             </div>
           </div>
@@ -166,10 +164,10 @@
 
         <!-- RIGHT column -->
         <div class="side-stack">
-          <div class="card card-pad">
+          <div class="card card-pad" id="dashRecommendation" hidden>
             <div class="card-row">
               <span class="card-title">Level Belajar Kamu</span>
-              <span class="badge">B1</span>
+              <span class="badge" id="dashLevelBadge">A1</span>
             </div>
             <div class="level-list" id="levelList">
               <!-- filled by dashboard.js -->
@@ -178,14 +176,23 @@
 
           <div class="card card-pad">
             <div class="card-title">Rekomendasi Hari Ini</div>
-            <a href="reading-test.html" class="recommend-card">
+            <a href="reading-test.html" class="recommend-card" id="dashRecommendationLink">
               <div class="recommend-ico"><svg class="icon" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></div>
               <div class="recommend-text">
-                <div class="t">Lanjutkan Reading Test</div>
-                <div class="s">Level B1 · 5 soal</div>
+                <div class="t" id="dashRecommendationTitle"></div>
+                <div class="s" id="dashRecommendationSub"></div>
               </div>
               <svg class="icon chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
             </a>
+          </div>
+
+          <div class="card card-pad">
+            <div class="card-row">
+              <span class="card-title">Kalender Belajar</span>
+              <span class="badge" id="dashCalendarStreak">0 hari</span>
+            </div>
+            <p class="s" style="margin:8px 0 14px;">Pantau sesi dan streak belajarmu.</p>
+            <a href="kalender.html" class="btn btn-outline btn-block">Buka Kalender</a>
           </div>
         </div>
       </div>

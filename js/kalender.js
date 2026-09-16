@@ -6,19 +6,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const accountStart = window.Englisify.getAccountStartDate();
+  accountStart.setHours(0, 0, 0, 0);
+  const stats = window.Englisify.getLearningStats();
+  const weekStart = new Date(today);
+  weekStart.setDate(weekStart.getDate() - 6);
+  const learnedDates = new Set((stats.activityDates || []).map((value) => {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date.toDateString();
+  }).filter(Boolean));
+  const firstAvailableDate = accountStart > today ? accountStart : today;
 
-  let viewYear = today.getFullYear();
-  let viewMonth = today.getMonth();
-  let selectedDate = new Date(today);
-
-  // Days in the current streak (learned), counting back from today
-  const streakLength = 8;
-  const learnedDates = new Set();
-  for (let i = 0; i < streakLength; i++) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    learnedDates.add(d.toDateString());
-  }
+  let viewYear = firstAvailableDate.getFullYear();
+  let viewMonth = firstAvailableDate.getMonth();
+  let selectedDate = new Date(firstAvailableDate);
 
   const grid = document.getElementById('calGrid');
   const monthLabel = document.getElementById('calMonthLabel');
@@ -26,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const daySub = document.getElementById('calDaySub');
 
   function sameDay(a, b) { return a.toDateString() === b.toDateString(); }
+  function beforeAccountStart(date) { return date < accountStart; }
 
   function renderCalendar() {
     monthLabel.textContent = `${monthNames[viewMonth]} ${viewYear}`;
@@ -55,44 +57,54 @@ document.addEventListener('DOMContentLoaded', () => {
     cells.forEach((cell) => {
       const el = document.createElement('div');
       el.className = 'cal-day';
-      if (cell.muted) el.classList.add('muted');
+      const unavailable = cell.muted || beforeAccountStart(cell.date);
+      if (unavailable) el.classList.add('muted');
       if (sameDay(cell.date, today)) el.classList.add('today');
-      if (learnedDates.has(cell.date.toDateString()) && !cell.muted) el.classList.add('learned');
-      if (sameDay(cell.date, selectedDate) && !cell.muted) el.classList.add('selected');
+      if (learnedDates.has(cell.date.toDateString()) && !unavailable) el.classList.add('learned');
+      if (sameDay(cell.date, selectedDate) && !unavailable) el.classList.add('selected');
 
-      el.innerHTML = `${cell.day}${learnedDates.has(cell.date.toDateString()) && !cell.muted ? '<span class="dot"></span>' : ''}`;
-
-      if (!cell.muted) {
-        el.addEventListener('click', () => {
-          selectedDate = cell.date;
-          renderCalendar();
-          renderDayInfo();
-        });
-      }
+      el.innerHTML = `${cell.day}${learnedDates.has(cell.date.toDateString()) && !unavailable ? '<span class="dot"></span>' : ''}`;
+      el.dataset.date = cell.date.toISOString();
       grid.appendChild(el);
     });
   }
 
   function renderDayInfo() {
+    if (beforeAccountStart(selectedDate)) {
+      dayTitle.textContent = 'Belum tersedia';
+      daySub.textContent = `Akun dibuat ${accountStart.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+      document.getElementById('calInfoList').innerHTML = '<p style="font-size:13px;color:var(--text-secondary);">Tanggal ini sebelum akun dibuat.</p>';
+      return;
+    }
     const isToday = sameDay(selectedDate, today);
     dayTitle.textContent = isToday ? 'Hari Ini' : selectedDate.toLocaleDateString('id-ID', { weekday: 'long' });
     daySub.textContent = selectedDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
     const list = document.getElementById('calInfoList');
-    if (learnedDates.has(selectedDate.toDateString())) {
-      list.innerHTML = `
+    const dayActivities = stats.activities.filter((activity) => {
+      const date = new Date(activity.at);
+      return !Number.isNaN(date.getTime()) && sameDay(date, selectedDate);
+    });
+    if (dayActivities.length > 0) {
+      list.innerHTML = dayActivities.map((activity) => `
         <div class="cal-info-item">
-          <div class="cal-info-ico"><svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><path d="M4 19V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/></svg></div>
-          <div><div class="t">12 kata</div><div class="s">Review kosakata</div></div>
-        </div>
-        <div class="cal-info-item">
-          <div class="cal-info-ico"><svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></div>
-          <div><div class="t">5 soal</div><div class="s">Reading Test</div></div>
-        </div>`;
+          <div class="cal-info-ico"><svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="9"/></svg></div>
+          <div><div class="t">${window.Englisify.escapeHtml(activity.title)}</div><div class="s">${Math.max(1, Math.ceil(activity.seconds / 60))} menit</div></div>
+        </div>`).join('');
+    } else if (learnedDates.has(selectedDate.toDateString())) {
+      list.innerHTML = '<p style="font-size:13px;color:var(--text-secondary);">Ada aktivitas belajar pada tanggal ini.</p>';
     } else {
       list.innerHTML = `<p style="font-size:13px;color:var(--text-secondary);">Tidak ada aktivitas belajar pada tanggal ini.</p>`;
     }
   }
+
+  grid.addEventListener('click', (event) => {
+    const day = event.target.closest('.cal-day');
+    if (!day || day.classList.contains('muted')) return;
+    selectedDate = new Date(day.dataset.date);
+    renderCalendar();
+    renderDayInfo();
+  });
 
   document.getElementById('calPrev').addEventListener('click', () => {
     viewMonth--;
@@ -104,6 +116,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (viewMonth > 11) { viewMonth = 0; viewYear++; }
     renderCalendar();
   });
+
+  document.getElementById('calWeekLearned').textContent = stats.activityDates.filter((value) => {
+    const date = new Date(value);
+    return !Number.isNaN(date.getTime()) && date >= weekStart && date <= today;
+  }).length;
+  document.getElementById('calWeekReviews').textContent = stats.todayReviews;
+  document.getElementById('calWeekReading').textContent = stats.activities.filter((activity) => activity.icon === 'reading').length;
+  document.getElementById('calStreak').textContent = `${stats.streakDays} hari`;
 
   renderCalendar();
   renderDayInfo();

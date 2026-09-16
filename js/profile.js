@@ -4,28 +4,33 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   const escapeHtml = window.Englisify.escapeHtml;
+  const stats = window.Englisify.getLearningStats();
+  const currentLevel = window.Englisify.getLevels().find((level) => level.state === 'current');
+  const profileValues = {
+    profileWordsLearned: stats.wordsLearned,
+    profileStreak: `${stats.streakDays} Hari`,
+    profileAverageScore: `${stats.averageScore}%`,
+    profileCurrentLevel: currentLevel.code,
+  };
+  Object.entries(profileValues).forEach(([id, value]) => {
+    const element = document.getElementById(id);
+    if (element) element.textContent = value;
+  });
 
   /* ------------------------------------------------------------------
-     Data statis untuk pencapaian & aktivitas (dummy, konsisten dengan
-     angka yang ditampilkan di Beranda). Belum ada backend, jadi status
-     earned/locked dihitung manual sesuai data yang sudah "nyata" di app
-     (428 kata, streak 8 hari, level B1 sedang berjalan).
+    Pencapaian dan aktivitas berasal dari statistik akun. Data baru dimulai
+    dari nol dan dapat diganti oleh repository database tanpa mengubah UI.
      ------------------------------------------------------------------ */
   const badges = [
-    { emoji: '🔥', name: '7 Hari Beruntun', desc: 'Belajar 7 hari berturut-turut', earned: true },
-    { emoji: '📘', name: 'Level A1 Selesai', desc: 'Lulus ujian level Pemula', earned: true },
-    { emoji: '📗', name: 'Level A2 Selesai', desc: 'Lulus ujian level Dasar', earned: true },
-    { emoji: '📚', name: '100 Kata Dikuasai', desc: 'Menguasai 100+ kosakata', earned: true },
-    { emoji: '🏆', name: 'Lulus Level B1', desc: 'Selesaikan ujian level Menengah', earned: false },
-    { emoji: '⭐', name: '30 Hari Beruntun', desc: 'Belajar 30 hari berturut-turut', earned: false },
+    { emoji: '🔥', name: '7 Hari Beruntun', desc: 'Belajar 7 hari berturut-turut', earned: stats.streakDays >= 7 },
+    { emoji: '📘', name: 'Level A1 Selesai', desc: 'Lulus ujian level Pemula', earned: stats.wordsLearned >= 1 },
+    { emoji: '📗', name: 'Level A2 Selesai', desc: 'Lulus ujian level Dasar', earned: window.Englisify.getLevels().some((level) => level.code === 'A2' && level.state === 'done') },
+    { emoji: '📚', name: '100 Kata Dikuasai', desc: 'Menguasai 100+ kosakata', earned: stats.wordsLearned >= 100 },
+    { emoji: '🏆', name: 'Lulus Level B1', desc: 'Selesaikan ujian level Menengah', earned: window.Englisify.getLevels().some((level) => level.code === 'B1' && level.state === 'done') },
+    { emoji: '⭐', name: '30 Hari Beruntun', desc: 'Belajar 30 hari berturut-turut', earned: stats.streakDays >= 30 },
   ];
 
-  const activities = [
-    { icon: 'reading', title: 'Menyelesaikan Reading Test', sub: 'Level B1 &middot; skor 84', time: 'Hari ini' },
-    { icon: 'flashcard', title: 'Me-review 12 kata kosakata', sub: 'Sesi Flashcard', time: 'Hari ini' },
-    { icon: 'streak', title: 'Streak belajar hari ke-8', sub: 'Terus pertahankan!', time: 'Kemarin' },
-    { icon: 'exam', title: 'Mencoba Ujian Level B1', sub: 'Belum lulus, coba lagi', time: '3 hari lalu' },
-  ];
+  const activities = stats.activities;
 
   const icons = {
     reading: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>',
@@ -40,6 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const initials = window.Englisify.getInitials(profile.name);
     document.getElementById('profileName').textContent = profile.name;
     document.getElementById('profileAvatar').textContent = initials;
+    document.getElementById('profileLevel').textContent = `Level ${currentLevel.code}`;
   }
 
   /* ---------------- Render pencapaian ---------------- */
@@ -56,12 +62,16 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ---------------- Render aktivitas terbaru ---------------- */
   function renderActivities() {
     const list = document.getElementById('activityList');
+    if (activities.length === 0) {
+      list.innerHTML = '<p style="font-size:13px;color:var(--text-secondary);">Belum ada aktivitas belajar.</p>';
+      return;
+    }
     list.innerHTML = activities.map((a) => `
       <div class="activity-item">
         <div class="activity-ico"><svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;">${icons[a.icon] || ''}</svg></div>
         <div>
           <div class="t">${escapeHtml(a.title)}</div>
-          <div class="s">${a.sub}</div>
+          <div class="s">${escapeHtml(a.sub)}</div>
         </div>
         <div class="time">${escapeHtml(a.time)}</div>
       </div>`).join('');

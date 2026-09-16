@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self';">
+<script src="js/theme-init.js"></script>
 <title>Englisify — Pengaturan</title>
 <link rel="stylesheet" href="css/style.css">
 <script src="js/auth.js" data-guard="protected"></script>
@@ -33,9 +34,6 @@
       <li><a class="nav-link" href="kosakata.html">
         <svg class="icon" viewBox="0 0 24 24"><path d="M4 19V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 19a2 2 0 0 1 2-2h13"/></svg>
         Kosakata</a></li>
-      <li><a class="nav-link" href="kalender.html">
-        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-        Kalender</a></li>
       <li><a class="nav-link" href="ujian-level.html">
         <svg class="icon" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5z"/></svg>
         Ujian Level</a></li>
@@ -146,6 +144,42 @@
               </div>
               <div class="settings-row">
                 <div>
+                  <div class="label-t">Target Durasi Sesi</div>
+                  <div class="label-s">Waktu belajar yang ingin dicapai setiap hari</div>
+                </div>
+                <select id="sessionTargetSelect">
+                  <option value="10">10 menit / hari</option>
+                  <option value="20">20 menit / hari</option>
+                  <option value="30">30 menit / hari</option>
+                  <option value="50">50 menit / hari</option>
+                </select>
+              </div>
+              <div class="settings-row">
+                <div>
+                  <div class="label-t">Jumlah Flashcard</div>
+                  <div class="label-s">Jumlah kartu utama dalam satu sesi Flashcard</div>
+                </div>
+                <select id="flashcardTargetSelect">
+                  <option value="10">10 kartu</option>
+                  <option value="20">20 kartu</option>
+                  <option value="30">30 kartu</option>
+                  <option value="50">50 kartu</option>
+                </select>
+              </div>
+              <div class="settings-row">
+                <div>
+                  <div class="label-t">Batas Kartu Ulang</div>
+                  <div class="label-s">Maksimal kartu Lupa atau Sulit yang diulang</div>
+                </div>
+                <select id="flashcardRedoSelect">
+                  <option value="0">Tidak ada</option>
+                  <option value="10">10 kartu</option>
+                  <option value="20">20 kartu</option>
+                  <option value="30">30 kartu</option>
+                </select>
+              </div>
+              <div class="settings-row">
+                <div>
                   <div class="label-t">Efek Suara Pelafalan</div>
                   <div class="label-s">Aktifkan audio saat menekan ikon pelafalan di Flashcard &amp; Kosakata</div>
                 </div>
@@ -159,7 +193,7 @@
               <div class="settings-row">
                 <div>
                   <div class="label-t">Hapus Semua Data Lokal</div>
-                  <div class="label-s">Mengembalikan tema, profil, dan preferensi ke pengaturan awal</div>
+                  <div class="label-s">Menghapus akun, progres belajar, tema, profil, dan preferensi lokal</div>
                 </div>
                 <button class="btn btn-outline" id="btnResetData" style="color:var(--red-500);border-color:var(--red-500);">Hapus Data</button>
               </div>
@@ -174,18 +208,18 @@
           <div class="card card-pad settings-summary-card">
             <div class="avatar lg">BS</div>
             <div class="u-name settings-summary-name">Budi Santoso</div>
-            <span class="badge settings-summary-level">Level B1</span>
+            <span class="badge settings-summary-level" id="settingsCurrentLevel">Level A1</span>
             <div class="settings-summary-stats">
               <div class="settings-summary-stat">
-                <div class="n">428</div>
+                <div class="n" id="settingsWordsLearned">0</div>
                 <div class="l">Kata</div>
               </div>
               <div class="settings-summary-stat">
-                <div class="n">8</div>
+                <div class="n" id="settingsStreak">0</div>
                 <div class="l">Hari Streak</div>
               </div>
               <div class="settings-summary-stat">
-                <div class="n">84%</div>
+                <div class="n" id="settingsAverageScore">0%</div>
                 <div class="l">Rata-rata</div>
               </div>
             </div>

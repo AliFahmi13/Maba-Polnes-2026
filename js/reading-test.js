@@ -4,6 +4,8 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
+  window.Englisify.startLearningSession('reading');
+
   /* ------------------------------------------------------------------
      Level metadata — konsisten dengan Beranda, Ujian Level & Flashcard.
      ------------------------------------------------------------------ */
@@ -165,20 +167,20 @@ document.addEventListener('DOMContentLoaded', () => {
       );
     }).join('');
 
-    levelGrid.querySelectorAll('.level-card').forEach((cardEl) => {
-      cardEl.addEventListener('click', () => {
-        const code = cardEl.dataset.code;
-        const state = cardEl.dataset.state;
-        if (state === 'locked') {
-          window.Englisify.toast('Selesaikan level sebelumnya untuk membuka ' + code);
-          return;
-        }
-        selectedLevel = code;
-        renderLevelGrid();
-        startBtn.disabled = false;
-      });
-    });
   }
+
+  levelGrid.addEventListener('click', (event) => {
+    const cardEl = event.target.closest('.level-card');
+    if (!cardEl) return;
+    const code = cardEl.dataset.code;
+    if (cardEl.dataset.state === 'locked') {
+      window.Englisify.toast('Selesaikan level sebelumnya untuk membuka ' + code);
+      return;
+    }
+    selectedLevel = code;
+    renderLevelGrid();
+    startBtn.disabled = false;
+  });
 
   startBtn.addEventListener('click', () => {
     if (!selectedLevel) return;
