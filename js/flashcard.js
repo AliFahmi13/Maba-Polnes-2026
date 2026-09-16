@@ -172,9 +172,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let bank = [];
     try {
       bank = await flashcardRepository.getAll();
+      console.log('Loaded flashcards:', bank.length, 'cards');
     } catch (error) {
-      console.warn('Flashcard sync skipped:', error.message);
-      window.Englisify.toast('Flashcard Supabase belum bisa dimuat');
+      console.error('Flashcard loading error:', error);
+      window.Englisify.toast('Gagal memuat flashcard: ' + error.message);
     }
     const targetCount = window.Englisify.getFlashcardTarget();
     levelBadge.textContent = 'Semua Level';
