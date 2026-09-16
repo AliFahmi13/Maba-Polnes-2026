@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Badges System</title>
+  <style>
+    body { font-family: system-ui; padding: 20px; max-width: 1000px; margin: 0 auto; }
+    .result { background: #f0f0f0; padding: 15px; margin: 10px 0; border-radius: 8px; }
+    .error { background: #fee; color: #c00; }
+    .success { background: #efe; color: #060; }
+    button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    pre { background: #f5f5f5; padding: 10px; overflow-x: auto; font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; }
+    table td, table th { padding: 8px; border: 1px solid #ddd; text-align: left; }
+    table th { background: #333; color: white; }
+    .badge { display: inline-flex; align-items: center; gap: 8px; padding: 12px 16px; margin: 8px; border-radius: 8px; border: 2px solid #ddd; }
+    .badge.earned { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-color: #667eea; }
+    .badge.locked { background: #f0f0f0; color: #888; border-color: #ddd; }
+    .badge .emoji { font-size: 32px; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Test Badges System</h1>
+  
+  <div class="result">
+    <h3>1. Check Login</h3>
+    <div id="loginStatus">Checking...</div>
+  </div>
+
+  <div class="result">
+    <h3>2. Raw Data from Supabase</h3>
+    <button onclick="loadRawData()">Load Raw Data</button>
+    <div id="rawDataStatus"></div>
+  </div>
+
+  <div class="result">
+    <h3>3. Badge Calculation</h3>
+    <button onclick="calculateBadges()">Calculate Badges</button>
+    <div id="badgeCalcStatus"></div>
+  </div>
+
+  <div class="result">
+    <h3>4. Visual Badges (seperti di Profile)</h3>
+    <div id="badgeDisplay" style="display: flex; flex-wrap: wrap;"></div>
+  </div>
+
+  <script src="js/supabase.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    // 1. Check login
+    const loginStatus = document.getElementById('loginStatus');
+    if (window.EnglisifySupabase.hasSession()) {
+      loginStatus.innerHTML = `<div class="success">✅ Logged in as: ${window.EnglisifySupabase.getUserId()}</div>`;
+    } else {
+      loginStatus.innerHTML = `<div class="error">❌ Not logged in! Please login first.</div>`;
+    }
+
+    let rawData = {
+      completions: [],
+      activities: [],
+      vocabulary: []
+    };
+
+    // 2. Load raw data
+    async function loadRawData() {
+      const status = document.getElementById('rawDataStatus');
+      status.innerHTML = 'Loading...';
+      
+      try {
+        rawData.completions = await window.EnglisifySupabase.getLevelCompletions();
+        rawData.activities = await window.EnglisifySupabase.getRecentActivities(365);
+        rawData.vocabulary = await window.EnglisifySupabase.getVocabularyHistory();
+        
+        const ujianCompletions = rawData.completions.filter(c => c.test_type === 'ujian');
+        const readingCompletions = rawData.completions.filter(c => c.test_type === 'reading-test');
+        
+        status.innerHTML = `
+          <div class="success">
+            <h4>✅ Data loaded successfully!</h4>
+            
+            <h5>Level Completions (${rawData.completions.length} total)</h5>
+            <table>
+              <tr>
+                <th>Type</th>
+                <th>Level</th>
+                <th>Score</th>
+                <th>Date</th>
+              </tr>
+              ${rawData.completions.map(c => `
+                <tr>
+                  <td>${c.test_type}</td>
+                  <td><strong>${c.level_code}</strong></td>
+                  <td>${c.score || '-'}</td>
+                  <td>${new Date(c.completed_at).toLocaleString('id-ID')}</td>
+                </tr>
+              `).join('')}
+            </table>
+            
+            <h5>Ujian Completions: ${ujianCompletions.length}</h5>
+            <pre>${JSON.stringify(ujianCompletions.map(c => ({ level: c.level_code, score: c.score })), null, 2)}</pre>
+            
+            <h5>Reading Test Completions: ${readingCompletions.length}</h5>
+            <pre>${JSON.stringify(readingCompletions.map(c => ({ level: c.level_code, score: c.score })), null, 2)}</pre>
+            
+            <h5>Activities (last 30 days): ${rawData.activities.slice(0, 30).length}</h5>
+            <pre>${JSON.stringify(rawData.activities.slice(0, 5).map(a => ({ type: a.activity_type, title: a.activity_title, date: a.created_at })), null, 2)}</pre>
+            
+            <h5>Vocabulary: ${rawData.vocabulary.length} words</h5>
+          </div>
+        `;
+        
+        console.log('Raw data loaded:', rawData);
+      } catch (error) {
+        status.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+        console.error('Load raw data error:', error);
+      }
+    }
+
+    // 3. Calculate badges
+    async function calculateBadges() {
+      const status = document.getElementById('badgeCalcStatus');
+      
+      if (rawData.completions.length === 0) {
+        status.innerHTML = '<div class="error">Please load raw data first!</div>';
+        return;
+      }
+      
+      const ujianCompletions = rawData.completions.filter(c => c.test_type === 'ujian');
+      const readingCompletions = rawData.completions.filter(c => c.test_type === 'reading-test');
+      
+      // Build completed levels set
+      const completedLevels = new Set();
+      ujianCompletions.forEach(c => {
+        if (c.level_code) {
+          const normalized = c.level_code.trim().toUpperCase();
+          completedLevels.add(normalized);
+          console.log('Added level:', normalized);
+        }
+      });
+      
+      // Calculate streak
+      const uniqueDates = new Set(rawData.activities.map(a => new Date(a.created_at).toDateString()));
+      const activityDates = Array.from(uniqueDates).sort((a, b) => new Date(b) - new Date(a));
+      
+      let currentStreak = 0;
+      const today = new Date().toDateString();
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+      
+      if (activityDates.length > 0) {
+        const lastActivity = activityDates[0];
+        if (lastActivity === today || lastActivity === yesterday) {
+          currentStreak = 1;
+          let checkDate = new Date(lastActivity);
+          for (let i = 1; i < activityDates.length; i++) {
+            checkDate.setDate(checkDate.getDate() - 1);
+            if (activityDates[i] === checkDate.toDateString()) {
+              currentStreak++;
+            } else {
+              break;
+            }
+          }
+        }
+      }
+      
+      const wordsLearned = rawData.vocabulary.length;
+      const flashcardSessions = rawData.activities.filter(a => a.activity_type === 'flashcard').length;
+      
+      const calc = {
+        completedLevels: Array.from(completedLevels),
+        completedLevelsSet: completedLevels,
+        hasA1: completedLevels.has('A1'),
+        hasA2: completedLevels.has('A2'),
+        hasB1: completedLevels.has('B1'),
+        hasB2: completedLevels.has('B2'),
+        hasC1: completedLevels.has('C1'),
+        currentStreak,
+        wordsLearned,
+        flashcardSessions,
+        readingTests: readingCompletions.length
+      };
+      
+      status.innerHTML = `
+        <div class="success">
+          <h4>Badge Calculation Results:</h4>
+          <pre>${JSON.stringify(calc, null, 2)}</pre>
+        </div>
+      `;
+      
+      console.log('Badge calculation:', calc);
+      
+      // Render badges
+      renderBadges(calc);
+    }
+
+    function renderBadges(calc) {
+      const display = document.getElementById('badgeDisplay');
+      
+      const badges = [
+        { emoji: '🎯', name: 'Memulai Perjalanan', earned: calc.flashcardSessions >= 1 },
+        { emoji: '🔥', name: '7 Hari Beruntun', earned: calc.currentStreak >= 7 },
+        { emoji: '📘', name: 'Level A1 Selesai', earned: calc.hasA1 },
+        { emoji: '📗', name: 'Level A2 Selesai', earned: calc.hasA2 },
+        { emoji: '📙', name: 'Level B1 Selesai', earned: calc.hasB1 },
+        { emoji: '📕', name: 'Level B2 Selesai', earned: calc.hasB2 },
+        { emoji: '📚', name: '50 Kata Dikuasai', earned: calc.wordsLearned >= 50 },
+        { emoji: '📖', name: '100 Kata Dikuasai', earned: calc.wordsLearned >= 100 },
+        { emoji: '⭐', name: '30 Hari Beruntun', earned: calc.currentStreak >= 30 },
+        { emoji: '💎', name: '10 Sesi Flashcard', earned: calc.flashcardSessions >= 10 },
+        { emoji: '🏆', name: 'Pembaca Hebat', earned: calc.readingTests >= 3 },
+        { emoji: '👑', name: 'Master C1', earned: calc.hasC1 },
+      ];
+      
+      display.innerHTML = badges.map(b => `
+        <div class="badge ${b.earned ? 'earned' : 'locked'}">
+          <div class="emoji">${b.emoji}</div>
+          <div>
+            <div style="font-weight:600;">${b.name}</div>
+            <div style="font-size:12px;">${b.earned ? '✅ Unlocked' : '🔒 Locked'}</div>
+          </div>
+        </div>
+      `).join('');
+      
+      console.log('Badges rendered:', {
+        total: badges.length,
+        earned: badges.filter(b => b.earned).length,
+        earnedBadges: badges.filter(b => b.earned).map(b => b.name)
+      });
+    }
+  </script>
+</body>
+</html>

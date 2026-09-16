@@ -8,6 +8,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     await window.Englisify.syncWordsLearnedFromHistory();
   }
   
+  // Sync level completions from Supabase
+  if (window.Englisify.syncLevelCompletionsFromSupabase) {
+    await window.Englisify.syncLevelCompletionsFromSupabase();
+  }
+  
   /* ---------------- Sapaan beranda: ikut nama profil & waktu saat ini ---------------- */
   const greetingEl = document.getElementById('dashGreeting');
   if (greetingEl) {
@@ -25,7 +30,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const levels = window.Englisify.levels;
   const stats = window.Englisify.getLearningStats();
-  const currentLevel = levels.find((level) => level.state === 'current') || levels[0];
+  const currentLevelCode = window.Englisify.getCurrentLevelFromProgress();
+  const currentLevel = levels.find((level) => level.code === currentLevelCode) || levels[0];
   const todayKey = new Date().toDateString();
   const todaySeconds = Number(stats.learningSecondsByDate[todayKey]) || 0;
   const targetMinutes = window.Englisify.getSessionTargetMinutes();
@@ -57,7 +63,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const dashCalendarStreak = document.getElementById('dashCalendarStreak');
   if (dashCalendarStreak) dashCalendarStreak.textContent = `${stats.streakDays} hari`;
 
-  const recommendationCard = document.getElementById('dashRecommendation');
+  // Always show the Ujian Kamu Saat Ini card
+  const ujianCard = document.getElementById('dashRecommendation');
+  if (ujianCard) ujianCard.hidden = false;
+
+  const recommendationCard = document.getElementById('dashRecommendation2');
   const recent = stats.activities[stats.activities.length - 1];
   if (recommendationCard && recent) {
     const destinations = { flashcard: 'flashcard.html', reading: 'reading-test.html', exam: 'ujian-level.html', vocabulary: 'kosakata.html' };
@@ -77,7 +87,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   const list = document.getElementById('levelList');
   if (!list) return;
 
-  list.innerHTML = levels.map((lv) => {
+  // Update level states based on actual completion from localStorage
+  const updatedLevels = levels.map((lv) => {
+    const ujianCompleted = window.Englisify.accountStore.get(`ujian-${lv.code}-completed`) === 'true';
+    const readingCompleted = window.Englisify.accountStore.get(`reading-test-${lv.code}-completed`) === 'true';
+    const isCompleted = ujianCompleted || readingCompleted;
+    
+    // Determine state
+    let state = lv.state;
+    if (isCompleted) {
+      state = 'done';
+    } else if (lv.code === currentLevel.code) {
+      state = 'current';
+    }
+    
+    return { ...lv, state };
+  });
+
+  list.innerHTML = updatedLevels.map((lv) => {
     const cls = ['level-item'];
     if (lv.state === 'current') cls.push('current');
     if (lv.state === 'locked') cls.push('locked');

@@ -8,9 +8,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     await window.Englisify.syncWordsLearnedFromHistory();
   }
   
+  // Sync level completions from Supabase
+  if (window.Englisify.syncLevelCompletionsFromSupabase) {
+    await window.Englisify.syncLevelCompletionsFromSupabase();
+  }
+  
   const escapeHtml = window.Englisify.escapeHtml;
   const stats = window.Englisify.getLearningStats();
-  const currentLevel = window.Englisify.getLevels().find((level) => level.state === 'current');
+  const currentLevelCode = window.Englisify.getCurrentLevelFromProgress();
+  const currentLevel = window.Englisify.getLevels().find((level) => level.code === currentLevelCode) || window.Englisify.getLevels()[0];
   const profileValues = {
     profileWordsLearned: stats.wordsLearned,
     profileStreak: `${stats.streakDays} Hari`,
@@ -23,25 +29,175 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   /* ------------------------------------------------------------------
-    Pencapaian dan aktivitas berasal dari statistik akun. Data baru dimulai
-    dari nol dan dapat diganti oleh repository database tanpa mengubah UI.
+    Pencapaian berdasarkan data real dari Supabase
      ------------------------------------------------------------------ */
-  const badges = [
-    { emoji: '🔥', name: '7 Hari Beruntun', desc: 'Belajar 7 hari berturut-turut', earned: stats.streakDays >= 7 },
-    { emoji: '📘', name: 'Level A1 Selesai', desc: 'Lulus ujian level Pemula', earned: stats.wordsLearned >= 1 },
-    { emoji: '📗', name: 'Level A2 Selesai', desc: 'Lulus ujian level Dasar', earned: window.Englisify.getLevels().some((level) => level.code === 'A2' && level.state === 'done') },
-    { emoji: '📚', name: '100 Kata Dikuasai', desc: 'Menguasai 100+ kosakata', earned: stats.wordsLearned >= 100 },
-    { emoji: '🏆', name: 'Lulus Level B1', desc: 'Selesaikan ujian level Menengah', earned: window.Englisify.getLevels().some((level) => level.code === 'B1' && level.state === 'done') },
-    { emoji: '⭐', name: '30 Hari Beruntun', desc: 'Belajar 30 hari berturut-turut', earned: stats.streakDays >= 30 },
-  ];
-
-  const activities = stats.activities;
+  
+  /* ---------------- Render pencapaian ---------------- */
+  async function renderBadges() {
+    const grid = document.getElementById('badgeGrid');
+    
+    try {
+      // Get data from Supabase
+      const completions = await window.EnglisifySupabase.getLevelCompletions();
+      const activities = await window.EnglisifySupabase.getRecentActivities(365); // Last year
+      const vocabularyHistory = await window.EnglisifySupabase.getVocabularyHistory();
+      
+      console.log('Badge data loaded:', {
+        completions: completions.length,
+        activities: activities.length,
+        vocabulary: vocabularyHistory.length
+      });
+      
+      // Calculate achievements
+      const ujianCompletions = completions.filter(c => c.test_type === 'ujian');
+      const readingCompletions = completions.filter(c => c.test_type === 'reading-test');
+      
+      console.log('Ujian completions:', ujianCompletions.map(c => ({ level: c.level_code, score: c.score })));
+      console.log('Reading completions:', readingCompletions.map(c => ({ level: c.level_code, score: c.score })));
+      
+      // Check which levels completed - case insensitive
+      const completedLevels = new Set();
+      ujianCompletions.forEach(c => {
+        if (c.level_code) {
+          completedLevels.add(c.level_code.toUpperCase());
+        }
+      });
+      
+      console.log('Completed levels:', Array.from(completedLevels));
+      
+      // Calculate streak from activities
+      const uniqueDates = new Set(activities.map(a => new Date(a.created_at).toDateString()));
+      const activityDates = Array.from(uniqueDates).sort((a, b) => new Date(b) - new Date(a));
+      
+      let currentStreak = 0;
+      const today = new Date().toDateString();
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+      
+      if (activityDates.length > 0) {
+        const lastActivity = activityDates[0];
+        if (lastActivity === today || lastActivity === yesterday) {
+          currentStreak = 1;
+          let checkDate = new Date(lastActivity);
+          for (let i = 1; i < activityDates.length; i++) {
+            checkDate.setDate(checkDate.getDate() - 1);
+            if (activityDates[i] === checkDate.toDateString()) {
+              currentStreak++;
+            } else {
+              break;
+            }
+          }
+        }
+      }
+      
+      // Count words learned
+      const wordsLearned = vocabularyHistory.length;
+      
+      // Count flashcard sessions
+      const flashcardSessions = activities.filter(a => a.activity_type === 'flashcard').length;
+      
+      // Define badges with real conditions
+      const badges = [
+        { 
+          emoji: '🎯', 
+          name: 'Memulai Perjalanan', 
+          desc: 'Selesaikan sesi flashcard pertama', 
+          earned: flashcardSessions >= 1 
+        },
+        { 
+          emoji: '🔥', 
+          name: '7 Hari Beruntun', 
+          desc: 'Belajar 7 hari berturut-turut', 
+          earned: currentStreak >= 7 
+        },
+        { 
+          emoji: '📘', 
+          name: 'Level A1 Selesai', 
+          desc: 'Lulus ujian level Pemula', 
+          earned: completedLevels.has('A1') 
+        },
+        { 
+          emoji: '📗', 
+          name: 'Level A2 Selesai', 
+          desc: 'Lulus ujian level Dasar', 
+          earned: completedLevels.has('A2') 
+        },
+        { 
+          emoji: '📙', 
+          name: 'Level B1 Selesai', 
+          desc: 'Lulus ujian level Menengah', 
+          earned: completedLevels.has('B1') 
+        },
+        { 
+          emoji: '📕', 
+          name: 'Level B2 Selesai', 
+          desc: 'Lulus ujian level Menengah Atas', 
+          earned: completedLevels.has('B2') 
+        },
+        { 
+          emoji: '📚', 
+          name: '50 Kata Dikuasai', 
+          desc: 'Pelajari 50+ kata', 
+          earned: wordsLearned >= 50 
+        },
+        { 
+          emoji: '📖', 
+          name: '100 Kata Dikuasai', 
+          desc: 'Pelajari 100+ kata', 
+          earned: wordsLearned >= 100 
+        },
+        { 
+          emoji: '⭐', 
+          name: '30 Hari Beruntun', 
+          desc: 'Belajar 30 hari berturut-turut', 
+          earned: currentStreak >= 30 
+        },
+        { 
+          emoji: '💎', 
+          name: '10 Sesi Flashcard', 
+          desc: 'Selesaikan 10 sesi flashcard', 
+          earned: flashcardSessions >= 10 
+        },
+        { 
+          emoji: '🏆', 
+          name: 'Pembaca Hebat', 
+          desc: 'Lulus 3 reading test', 
+          earned: readingCompletions.length >= 3 
+        },
+        { 
+          emoji: '👑', 
+          name: 'Master C1', 
+          desc: 'Lulus ujian level Mahir', 
+          earned: completedLevels.has('C1') 
+        },
+      ];
+      
+      grid.innerHTML = badges.map((b) => `
+        <div class="badge-item ${b.earned ? '' : 'locked'}">
+          <div class="badge-emoji">${b.emoji}</div>
+          <div class="badge-name">${escapeHtml(b.name)}</div>
+          <div class="badge-desc">${escapeHtml(b.desc)}</div>
+        </div>`).join('');
+      
+      console.log('Badges calculated:', {
+        currentStreak,
+        wordsLearned,
+        flashcardSessions,
+        completedLevels: Array.from(completedLevels),
+        earnedCount: badges.filter(b => b.earned).length,
+        earnedBadges: badges.filter(b => b.earned).map(b => b.name)
+      });
+    } catch (error) {
+      console.error('Error loading badges:', error);
+      grid.innerHTML = '<p style="color:var(--text-secondary);padding:20px;">Gagal memuat pencapaian. Silakan refresh halaman.</p>';
+    }
+  }
 
   const icons = {
-    reading: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>',
+    'reading-test': '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>',
     flashcard: '<rect x="3" y="4" width="14" height="16" rx="2"/><path d="M17 8h4v12H7"/>',
     streak: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.4-1.2-2-1.5-3.3C9 6.5 10 4 12 3c-.3 1.5.5 2.7 1.5 4 1 1.3 2 2.7 2 4.5A5.5 5.5 0 0 1 4 12c0-1.2.5-2 1-2.7"/>',
-    exam: '<path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5z"/>',
+    ujian: '<path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5z"/>',
+    vocabulary: '<path d="M4 19V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 19a2 2 0 0 1 2-2h13"/>',
   };
 
   /* ---------------- Render identitas dari profil tersimpan ---------------- */
@@ -53,33 +209,50 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('profileLevel').textContent = `Level ${currentLevel.code}`;
   }
 
-  /* ---------------- Render pencapaian ---------------- */
-  function renderBadges() {
-    const grid = document.getElementById('badgeGrid');
-    grid.innerHTML = badges.map((b) => `
-      <div class="badge-item ${b.earned ? '' : 'locked'}">
-        <div class="badge-emoji">${b.emoji}</div>
-        <div class="badge-name">${escapeHtml(b.name)}</div>
-        <div class="badge-desc">${escapeHtml(b.desc)}</div>
-      </div>`).join('');
-  }
-
   /* ---------------- Render aktivitas terbaru ---------------- */
-  function renderActivities() {
+  async function renderActivities() {
     const list = document.getElementById('activityList');
+    
+    // Load activities from Supabase
+    const activities = await window.EnglisifySupabase.getRecentActivities(10);
+    
     if (activities.length === 0) {
       list.innerHTML = '<p style="font-size:13px;color:var(--text-secondary);">Belum ada aktivitas belajar.</p>';
       return;
     }
-    list.innerHTML = activities.map((a) => `
+    
+    // Format relative time
+    function formatRelativeTime(dateString) {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffSecs = Math.floor(diffMs / 1000);
+      const diffMins = Math.floor(diffSecs / 60);
+      const diffHours = Math.floor(diffMins / 60);
+      const diffDays = Math.floor(diffHours / 24);
+      
+      if (diffSecs < 60) return `${diffSecs} detik lalu`;
+      if (diffMins < 60) return `${diffMins} menit lalu`;
+      if (diffHours < 24) return `${diffHours} jam lalu`;
+      if (diffDays === 1) return 'Kemarin';
+      if (diffDays < 7) return `${diffDays} hari lalu`;
+      
+      // Format date for older activities
+      return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+    }
+    
+    list.innerHTML = activities.map((a) => {
+      const iconSvg = icons[a.activity_type] || icons.flashcard;
+      return `
       <div class="activity-item">
-        <div class="activity-ico"><svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;">${icons[a.icon] || ''}</svg></div>
+        <div class="activity-ico"><svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;">${iconSvg}</svg></div>
         <div>
-          <div class="t">${escapeHtml(a.title)}</div>
-          <div class="s">${escapeHtml(a.sub)}</div>
+          <div class="t">${escapeHtml(a.activity_title)}</div>
+          <div class="s">${escapeHtml(a.activity_subtitle || '')}</div>
         </div>
-        <div class="time">${escapeHtml(a.time)}</div>
-      </div>`).join('');
+        <div class="time">${formatRelativeTime(a.created_at)}</div>
+      </div>`;
+    }).join('');
   }
 
   /* ---------------- Edit profil (modal) ---------------- */
@@ -105,6 +278,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   renderIdentity();
-  renderBadges();
-  renderActivities();
+  await renderBadges();
+  await renderActivities();
 });

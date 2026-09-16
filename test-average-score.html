@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Average Score</title>
+  <style>
+    body { font-family: system-ui; padding: 20px; max-width: 800px; margin: 0 auto; }
+    .result { background: #f0f0f0; padding: 15px; margin: 10px 0; border-radius: 8px; }
+    .error { background: #fee; color: #c00; }
+    .success { background: #efe; color: #060; }
+    button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Test Average Score Calculation</h1>
+  
+  <div class="result">
+    <h3>1. Check if logged in</h3>
+    <div id="loginStatus">Checking...</div>
+  </div>
+
+  <div class="result">
+    <h3>2. Check if table exists</h3>
+    <div id="tableStatus">Checking...</div>
+    <button onclick="checkTable()">Recheck Table</button>
+  </div>
+
+  <div class="result">
+    <h3>3. Get level completions</h3>
+    <div id="completionsStatus">Not checked yet</div>
+    <button onclick="getCompletions()">Get Completions</button>
+  </div>
+
+  <div class="result">
+    <h3>4. Calculate average score</h3>
+    <div id="averageStatus">Not calculated yet</div>
+    <button onclick="calculateAverage()">Calculate Average</button>
+  </div>
+
+  <div class="result">
+    <h3>5. Current stats</h3>
+    <div id="statsStatus">Not loaded yet</div>
+    <button onclick="checkStats()">Check Stats</button>
+  </div>
+
+  <div class="result">
+    <h3>6. Test: Add fake completion</h3>
+    <input type="text" id="testLevel" placeholder="Level (e.g., A1)" value="A1">
+    <input type="number" id="testScore" placeholder="Score" value="85">
+    <button onclick="addTestCompletion()">Add Test Ujian Result</button>
+    <div id="testStatus"></div>
+  </div>
+
+  <script src="js/supabase.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    // 1. Check login
+    const loginStatus = document.getElementById('loginStatus');
+    if (window.EnglisifySupabase.hasSession()) {
+      loginStatus.innerHTML = `<div class="success">✅ Logged in as: ${window.EnglisifySupabase.getUserId()}</div>`;
+    } else {
+      loginStatus.innerHTML = `<div class="error">❌ Not logged in! Please login first.</div>`;
+    }
+
+    // 2. Check if table exists
+    async function checkTable() {
+      const status = document.getElementById('tableStatus');
+      status.innerHTML = 'Checking...';
+      try {
+        const result = await window.EnglisifySupabase.getLevelCompletions();
+        status.innerHTML = `<div class="success">✅ Table exists! Found ${result.length} completions</div>`;
+      } catch (error) {
+        status.innerHTML = `<div class="error">❌ Error: ${error.message}<br><br>Please run SQL migration:<br><code>sql/add-level-completion-tracking.sql</code></div>`;
+      }
+    }
+    checkTable();
+
+    // 3. Get completions
+    async function getCompletions() {
+      const status = document.getElementById('completionsStatus');
+      status.innerHTML = 'Loading...';
+      try {
+        const completions = await window.EnglisifySupabase.getLevelCompletions();
+        if (completions.length === 0) {
+          status.innerHTML = `<div>No completions found. Complete an ujian to test!</div>`;
+        } else {
+          status.innerHTML = `<div class="success">Found ${completions.length} completions:</div><pre>${JSON.stringify(completions, null, 2)}</pre>`;
+        }
+      } catch (error) {
+        status.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+      }
+    }
+
+    // 4. Calculate average
+    async function calculateAverage() {
+      const status = document.getElementById('averageStatus');
+      status.innerHTML = 'Calculating...';
+      try {
+        const completions = await window.EnglisifySupabase.getLevelCompletions();
+        const ujianCompletions = completions.filter(c => c.test_type === 'ujian' && c.score != null);
+        
+        if (ujianCompletions.length === 0) {
+          status.innerHTML = `<div>No ujian completions with scores found.</div>`;
+        } else {
+          const totalScore = ujianCompletions.reduce((sum, c) => sum + c.score, 0);
+          const averageScore = Math.round(totalScore / ujianCompletions.length);
+          status.innerHTML = `<div class="success">Average: ${averageScore}%<br>From ${ujianCompletions.length} ujian results<br>Scores: ${ujianCompletions.map(c => c.score).join(', ')}</div>`;
+        }
+      } catch (error) {
+        status.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+      }
+    }
+
+    // 5. Check stats
+    function checkStats() {
+      const status = document.getElementById('statsStatus');
+      const stats = window.Englisify.getLearningStats();
+      status.innerHTML = `<pre>${JSON.stringify({
+        averageScore: stats.averageScore,
+        wordsLearned: stats.wordsLearned,
+        streakDays: stats.streakDays
+      }, null, 2)}</pre>`;
+    }
+
+    // 6. Add test completion
+    async function addTestCompletion() {
+      const status = document.getElementById('testStatus');
+      const level = document.getElementById('testLevel').value;
+      const score = parseInt(document.getElementById('testScore').value);
+      
+      if (!level || !score) {
+        status.innerHTML = '<div class="error">Please provide level and score</div>';
+        return;
+      }
+
+      status.innerHTML = 'Adding...';
+      try {
+        await window.EnglisifySupabase.markLevelComplete(level, 'ujian', score);
+        status.innerHTML = `<div class="success">✅ Added ${level} with score ${score}!<br>Now click "Calculate Average" to see the result.</div>`;
+      } catch (error) {
+        status.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+      }
+    }
+  </script>
+</body>
+</html>

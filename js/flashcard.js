@@ -168,6 +168,17 @@ document.addEventListener('DOMContentLoaded', () => {
       done.classList.remove('hidden');
       const doneSummary = el('fcDoneSummary');
       if (doneSummary) doneSummary.textContent = `Kamu sudah mereview ${deck.length} kartu. Kerja bagus!`;
+      
+      // Record activity to Supabase
+      if (window.EnglisifySupabase && typeof window.EnglisifySupabase.recordActivity === 'function') {
+        window.EnglisifySupabase.recordActivity(
+          'flashcard',
+          'Menyelesaikan Sesi Flashcard',
+          `${deck.length} kartu dipelajari`,
+          null
+        ).catch(error => console.warn('Activity tracking skipped:', error));
+      }
+      
       return;
     }
     index = newIndex;

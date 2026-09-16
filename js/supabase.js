@@ -188,6 +188,114 @@
     }
   }
 
+  // Get all level completions for current user
+  async function getLevelCompletions() {
+    if (!userId() || !accessToken()) {
+      console.log('Not logged in, returning empty completions');
+      return [];
+    }
+    try {
+      const result = await request(`/rest/v1/user_level_completion?user_id=eq.${encodeURIComponent(userId())}&select=*`);
+      console.log('Level completions from Supabase:', result);
+      return Array.isArray(result) ? result : [];
+    } catch (error) {
+      if (error.status === 404 || error.status === 400) {
+        console.warn('Level completion table not found or bad request - did you run the SQL migration?');
+        return [];
+      }
+      console.error('getLevelCompletions error:', error);
+      return [];
+    }
+  }
+
+  // Mark a level as completed
+  async function markLevelComplete(levelCode, testType, score = null) {
+    if (!userId() || !accessToken()) {
+      console.warn('User not logged in, skipping level completion recording');
+      return;
+    }
+    try {
+      console.log('Marking level complete:', { levelCode, testType, score });
+      
+      const result = await request('/rest/v1/user_level_completion', {
+        method: 'POST',
+        headers: { 
+          Prefer: 'resolution=merge-duplicates,return=representation',
+        },
+        body: JSON.stringify({
+          user_id: userId(),
+          level_code: levelCode,
+          test_type: testType,
+          completed_at: new Date().toISOString(),
+          score: score,
+        }),
+      });
+      
+      console.log('Level completion recorded in Supabase:', result);
+      return result;
+    } catch (error) {
+      console.error('markLevelComplete error:', error);
+      if (error.status === 404) {
+        console.error('Table user_level_completion not found! Please run the SQL migration: sql/add-level-completion-tracking.sql');
+      }
+      throw error;
+    }
+  }
+
+  // Get recent activities for current user
+  async function getRecentActivities(limit = 20) {
+    if (!userId() || !accessToken()) {
+      console.log('Not logged in, returning empty activities');
+      return [];
+    }
+    try {
+      const result = await request(`/rest/v1/user_activities?user_id=eq.${encodeURIComponent(userId())}&select=*&order=created_at.desc&limit=${limit}`);
+      console.log('Activities from Supabase:', result);
+      return Array.isArray(result) ? result : [];
+    } catch (error) {
+      if (error.status === 404 || error.status === 400) {
+        console.warn('Activity table not found - did you run the SQL migration?');
+        return [];
+      }
+      console.error('getRecentActivities error:', error);
+      return [];
+    }
+  }
+
+  // Record a learning activity
+  async function recordActivity(activityType, title, subtitle = null, levelCode = null, durationSeconds = null) {
+    if (!userId() || !accessToken()) {
+      console.warn('User not logged in, skipping activity recording');
+      return;
+    }
+    try {
+      const result = await request('/rest/v1/user_activities', {
+        method: 'POST',
+        headers: { 
+          Prefer: 'return=representation',
+        },
+        body: JSON.stringify({
+          user_id: userId(),
+          activity_type: activityType,
+          activity_title: title,
+          activity_subtitle: subtitle,
+          level_code: levelCode,
+          duration_seconds: durationSeconds,
+          created_at: new Date().toISOString(),
+        }),
+      });
+      
+      console.log('Activity recorded in Supabase:', result);
+      return result;
+    } catch (error) {
+      console.error('recordActivity error:', error);
+      if (error.status === 404) {
+        console.error('Table user_activities not found! Please run the SQL migration: sql/add-user-activities.sql');
+      }
+      // Don't throw - activity recording is not critical
+    }
+  }
+
   function setData(key, value) {
     const next = cache();
     next[cacheKey(key)] = value;
@@ -222,6 +330,10 @@
     getFlashcards,
     getVocabularyHistory,
     recordVocabularyReview,
+    getLevelCompletions,
+    markLevelComplete,
+    getRecentActivities,
+    recordActivity,
     dataStore: {
       get(key) { const values = cache(); return values[cacheKey(key)] ?? null; },
       set: setData,

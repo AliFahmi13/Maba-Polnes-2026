@@ -327,6 +327,60 @@
     }));
   }
 
+  // Calculate current level based on both Ujian Level and Reading Test completion
+  // Reads from localStorage for immediate availability
+  window.Englisify.getCurrentLevelFromProgress = function() {
+    const levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+    let currentLevelIndex = 0; // Start at A1
+    
+    // Find the highest unlocked level (next level after all completed ones)
+    for (let i = 0; i < levels.length; i++) {
+      const level = levels[i];
+      const ujianCompleted = window.Englisify.accountStore.get(`ujian-${level}-completed`) === 'true';
+      const readingCompleted = window.Englisify.accountStore.get(`reading-test-${level}-completed`) === 'true';
+      
+      if (ujianCompleted || readingCompleted) {
+        // This level is completed, so current level is at least the next one
+        currentLevelIndex = Math.min(i + 1, levels.length - 1);
+      } else {
+        // Found first incomplete level, this is the current one
+        currentLevelIndex = i;
+        break;
+      }
+    }
+    
+    return levels[currentLevelIndex];
+  };
+  
+  // Sync level completions from Supabase to localStorage on load
+  window.Englisify.syncLevelCompletionsFromSupabase = async function() {
+    try {
+      const completions = await window.EnglisifySupabase.getLevelCompletions();
+      completions.forEach((comp) => {
+        const key = `${comp.test_type}-${comp.level_code}-completed`;
+        window.Englisify.accountStore.set(key, 'true');
+        if (comp.score) {
+          window.Englisify.accountStore.set(`${comp.test_type}-${comp.level_code}-score`, String(comp.score));
+        }
+      });
+      console.log('Synced', completions.length, 'level completions from Supabase');
+      
+      // Calculate and update average score from ujian results
+      const ujianCompletions = completions.filter(c => c.test_type === 'ujian' && c.score != null);
+      if (ujianCompletions.length > 0) {
+        const totalScore = ujianCompletions.reduce((sum, c) => sum + c.score, 0);
+        const averageScore = Math.round(totalScore / ujianCompletions.length);
+        
+        // Update learning stats with the average
+        const stats = getLearningStats();
+        saveLearningStats({ averageScore: averageScore });
+        console.log('Updated average score:', averageScore, 'from', ujianCompletions.length, 'ujian results');
+      }
+    } catch (error) {
+      console.error('Failed to sync level completions:', error);
+    }
+  };
+
   window.Englisify.levels = getLevels();
   window.Englisify.getLevels = getLevels;
   window.Englisify.unlockNextLevel = function (code) {
@@ -400,7 +454,8 @@
   window.Englisify.applyProfileToPage = function () {
     const profile = window.Englisify.getProfile();
     const initials = window.Englisify.getInitials(profile.name);
-    const currentLevel = window.Englisify.getLevels().find((level) => level.state === 'current');
+    const currentLevelCode = window.Englisify.getCurrentLevelFromProgress();
+    const currentLevel = window.Englisify.getLevels().find((level) => level.code === currentLevelCode) || window.Englisify.getLevels()[0];
     document.querySelectorAll('.u-name').forEach((el) => { el.textContent = profile.name; });
     document.querySelectorAll('.avatar').forEach((el) => { el.textContent = initials; });
     document.querySelectorAll('.u-level').forEach((el) => { el.textContent = `Level ${currentLevel.code}`; });

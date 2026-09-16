@@ -298,7 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function showResult() {
+  async function showResult() {
     quizStage.classList.add('hidden');
     passageCard.classList.add('hidden');
     document.querySelector('#rtStepReading .card-row').classList.add('hidden');
@@ -315,12 +315,39 @@ document.addEventListener('DOMContentLoaded', () => {
       window.Englisify.accountStore.set(completionKey, 'true');
       window.Englisify.accountStore.set(`reading-test-${selectedLevel}-score`, String(percent));
       
+      // Save to Supabase
+      try {
+        await window.EnglisifySupabase.markLevelComplete(selectedLevel, 'reading-test', percent);
+        
+        // Record activity
+        await window.EnglisifySupabase.recordActivity(
+          'reading-test',
+          `Menyelesaikan Reading Test ${selectedLevel}`,
+          `Skor: ${percent}% - ${passed ? 'LULUS' : 'BELUM LULUS'}`,
+          selectedLevel
+        );
+      } catch (error) {
+        console.error('Failed to save completion to Supabase:', error);
+      }
+      
       // Find and unlock next level
       const currentIndex = LEVELS.findIndex(lv => lv.code === selectedLevel);
       if (currentIndex !== -1 && currentIndex < LEVELS.length - 1) {
         const nextLevel = LEVELS[currentIndex + 1];
         const nextLevelUnlockKey = `reading-test-${nextLevel.code}-unlocked`;
         window.Englisify.accountStore.set(nextLevelUnlockKey, 'true');
+      }
+    } else {
+      // Record attempt even if failed
+      try {
+        await window.EnglisifySupabase.recordActivity(
+          'reading-test',
+          `Mencoba Reading Test ${selectedLevel}`,
+          `Skor: ${percent}% - Belum Lulus`,
+          selectedLevel
+        );
+      } catch (error) {
+        console.error('Failed to record activity:', error);
       }
     }
 

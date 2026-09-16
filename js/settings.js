@@ -9,7 +9,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   
   const stats = window.Englisify.getLearningStats();
-  const currentLevel = window.Englisify.getLevels().find((level) => level.state === 'current');
+  const currentLevelCode = window.Englisify.getCurrentLevelFromProgress();
+  const currentLevel = window.Englisify.getLevels().find((level) => level.code === currentLevelCode) || window.Englisify.getLevels()[0];
 
   const summaryValues = {
     settingsWordsLearned: stats.wordsLearned,

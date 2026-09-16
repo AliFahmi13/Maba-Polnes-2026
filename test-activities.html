@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Activities</title>
+  <style>
+    body { font-family: system-ui; padding: 20px; max-width: 800px; margin: 0 auto; }
+    .result { background: #f0f0f0; padding: 15px; margin: 10px 0; border-radius: 8px; }
+    .error { background: #fee; color: #c00; }
+    .success { background: #efe; color: #060; }
+    button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    .activity-item { 
+      display: flex; 
+      gap: 12px; 
+      padding: 12px; 
+      background: white; 
+      margin: 8px 0; 
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+    .activity-item .time { margin-left: auto; color: #666; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Test Activities System</h1>
+  
+  <div class="result">
+    <h3>1. Check Login Status</h3>
+    <div id="loginStatus">Checking...</div>
+  </div>
+
+  <div class="result">
+    <h3>2. Check if activities table exists</h3>
+    <div id="tableStatus">Checking...</div>
+    <button onclick="checkTable()">Recheck Table</button>
+  </div>
+
+  <div class="result">
+    <h3>3. Get activities</h3>
+    <div id="activitiesStatus">Not checked yet</div>
+    <button onclick="getActivities()">Load Activities</button>
+  </div>
+
+  <div class="result">
+    <h3>4. Add Test Activity</h3>
+    <select id="testType">
+      <option value="flashcard">Flashcard</option>
+      <option value="ujian">Ujian Level</option>
+      <option value="reading-test">Reading Test</option>
+      <option value="vocabulary">Vocabulary</option>
+    </select>
+    <input type="text" id="testTitle" placeholder="Title" value="Test Activity">
+    <input type="text" id="testSubtitle" placeholder="Subtitle" value="This is a test">
+    <button onclick="addTestActivity()">Add Test Activity</button>
+    <div id="testStatus"></div>
+  </div>
+
+  <div class="result">
+    <h3>5. Display Activities (like Profile page)</h3>
+    <div id="displayActivities">
+      <p style="color:#888;">Click "Load Activities" first</p>
+    </div>
+  </div>
+
+  <script src="js/supabase.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    // 1. Check login
+    const loginStatus = document.getElementById('loginStatus');
+    if (window.EnglisifySupabase.hasSession()) {
+      loginStatus.innerHTML = `<div class="success">✅ Logged in as: ${window.EnglisifySupabase.getUserId()}</div>`;
+    } else {
+      loginStatus.innerHTML = `<div class="error">❌ Not logged in! Please login first.</div>`;
+    }
+
+    // 2. Check if table exists
+    async function checkTable() {
+      const status = document.getElementById('tableStatus');
+      status.innerHTML = 'Checking...';
+      try {
+        const result = await window.EnglisifySupabase.getRecentActivities(1);
+        status.innerHTML = `<div class="success">✅ Table exists! Found ${result.length} activities (showing 1)</div>`;
+      } catch (error) {
+        status.innerHTML = `<div class="error">❌ Error: ${error.message}<br><br>Please run SQL migration:<br><code>sql/add-user-activities.sql</code></div>`;
+        console.error('Table check error:', error);
+      }
+    }
+    checkTable();
+
+    // 3. Get activities
+    async function getActivities() {
+      const status = document.getElementById('activitiesStatus');
+      const display = document.getElementById('displayActivities');
+      status.innerHTML = 'Loading...';
+      try {
+        const activities = await window.EnglisifySupabase.getRecentActivities(10);
+        if (activities.length === 0) {
+          status.innerHTML = `<div>No activities found. Add a test activity below!</div>`;
+          display.innerHTML = '<p style="color:#888;">No activities yet</p>';
+        } else {
+          status.innerHTML = `<div class="success">Found ${activities.length} activities</div><pre>${JSON.stringify(activities, null, 2)}</pre>`;
+          
+          // Display like profile page
+          const icons = {
+            'reading-test': '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>',
+            flashcard: '<rect x="3" y="4" width="14" height="16" rx="2"/><path d="M17 8h4v12H7"/>',
+            ujian: '<path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5z"/>',
+            vocabulary: '<path d="M4 19V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 19a2 2 0 0 1 2-2h13"/>',
+          };
+          
+          function formatRelativeTime(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffSecs = Math.floor(diffMs / 1000);
+            const diffMins = Math.floor(diffSecs / 60);
+            const diffHours = Math.floor(diffMins / 60);
+            const diffDays = Math.floor(diffHours / 24);
+            
+            if (diffSecs < 60) return `${diffSecs} detik lalu`;
+            if (diffMins < 60) return `${diffMins} menit lalu`;
+            if (diffHours < 24) return `${diffHours} jam lalu`;
+            if (diffDays === 1) return 'Kemarin';
+            if (diffDays < 7) return `${diffDays} hari lalu`;
+            
+            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+          }
+          
+          display.innerHTML = activities.map(a => {
+            const iconSvg = icons[a.activity_type] || icons.flashcard;
+            return `
+              <div class="activity-item">
+                <div><svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${iconSvg}</svg></div>
+                <div style="flex:1;">
+                  <div style="font-weight:600;">${a.activity_title}</div>
+                  <div style="font-size:13px;color:#666;">${a.activity_subtitle || ''}</div>
+                </div>
+                <div class="time">${formatRelativeTime(a.created_at)}</div>
+              </div>`;
+          }).join('');
+        }
+      } catch (error) {
+        status.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+        console.error('Get activities error:', error);
+      }
+    }
+
+    // 4. Add test activity
+    async function addTestActivity() {
+      const status = document.getElementById('testStatus');
+      const type = document.getElementById('testType').value;
+      const title = document.getElementById('testTitle').value;
+      const subtitle = document.getElementById('testSubtitle').value;
+      
+      if (!title) {
+        status.innerHTML = '<div class="error">Please provide a title</div>';
+        return;
+      }
+
+      status.innerHTML = 'Adding...';
+      try {
+        await window.EnglisifySupabase.recordActivity(type, title, subtitle, null, null);
+        status.innerHTML = `<div class="success">✅ Activity added!<br>Now click "Load Activities" to see it.</div>`;
+      } catch (error) {
+        status.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+        console.error('Add activity error:', error);
+      }
+    }
+  </script>
+</body>
+</html>

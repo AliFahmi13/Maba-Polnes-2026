@@ -236,16 +236,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         <td>
           <div class="row-menu">
             <button class="menu-btn" data-menu="${v.id}">${iconMore()}</button>
-            <div class="dropdown" data-dropdown="${v.id}">
-              <button data-action="review" data-id="${v.id}">
+            <div class="dropdown" data-dropdown="${v.id}" style="pointer-events:all;">
+              <button data-action="review" data-id="${v.id}" style="pointer-events:all;">
                 <svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px;"><rect x="3" y="4" width="14" height="16" rx="2"/><path d="M17 8h4v12H7"/></svg>
                 ${v.status === 'dipelajari' ? 'Review Lagi' : 'Belajar Sekarang'}
               </button>
-              <button data-action="details" data-id="${v.id}">
+              <button data-action="details" data-id="${v.id}" style="pointer-events:all;">
                 <svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h0"/></svg>
                 Lihat Detail
               </button>
-              ${v.source === 'user' ? `<button class="danger" data-action="delete" data-id="${v.id}">
+              ${v.source === 'user' ? `<button class="danger" data-action="delete" data-id="${v.id}" style="pointer-events:all;">
                 <svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px;"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
                 Hapus
               </button>` : ''}
@@ -261,6 +261,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!btn || !tbody.contains(btn)) return;
 
       if (btn.hasAttribute('data-speak')) {
+        event.stopPropagation();
         if (!window.Englisify.isSoundEnabled()) {
           window.Englisify.toast('Efek suara dimatikan — aktifkan lagi di Pengaturan');
           return;
@@ -274,38 +275,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
-      if (btn.classList.contains('menu-btn')) {
-        const dd = tbody.querySelector(`[data-dropdown="${btn.dataset.menu}"]`);
-        if (!dd) return;
-        const wasOpen = dd.classList.contains('open');
-        tbody.querySelectorAll('.dropdown.open').forEach((d) => d.classList.remove('open'));
-        if (!wasOpen) dd.classList.add('open');
-        return;
-      }
-
+      // Handle dropdown action buttons FIRST before menu toggle
       if (btn.hasAttribute('data-action')) {
+        event.stopPropagation();
+        event.preventDefault();
         const id = btn.dataset.id;
-        const vocabItem = vocab.find((v) => v.id === id);
+        // ID might be number or string, so convert both for comparison
+        const vocabItem = vocab.find((v) => String(v.id) === String(id));
         if (!vocabItem) return;
         
         const action = btn.dataset.action;
         if (action === 'review') {
           window.location.href = 'flashcard.html';
         } else if (action === 'details') {
-          // Show details modal with full information
-          const hist = historyMap.get(vocabItem.word.toLowerCase());
-          const histInfo = hist 
-            ? `<br><small>Dipelajari ${vocabItem.last} · Review ${vocabItem.next}</small>`
-            : '<br><small>Belum pernah dipelajari</small>';
-          
-          const details = `
-            <strong>${vocabItem.word}</strong> ${vocabItem.ipa || ''}<br>
-            <em>${typeLabels[vocabItem.type]}</em> · Level ${vocabItem.level}<br>
-            ${vocabItem.meaning}<br>
-            <small>${vocabItem.example}</small>
-            ${histInfo}
-          `;
-          window.Englisify.toast(details);
+          // Show detailed modal
+          showWordDetail(vocabItem);
         } else if (action === 'delete' && vocabItem.source === 'user') {
           // Delete user-created word
           const userWords = getUserWords();
@@ -314,9 +298,113 @@ document.addEventListener('DOMContentLoaded', async () => {
           window.Englisify.toast(`"${vocabItem.word}" dihapus`);
           await loadVocabulary();
         }
+        return;
+      }
+
+      if (btn.classList.contains('menu-btn')) {
+        event.stopPropagation();
+        const dd = tbody.querySelector(`[data-dropdown="${btn.dataset.menu}"]`);
+        if (!dd) return;
+        const wasOpen = dd.classList.contains('open');
+        tbody.querySelectorAll('.dropdown.open').forEach((d) => d.classList.remove('open'));
+        if (!wasOpen) dd.classList.add('open');
+        return;
       }
     };
   }
+
+  // Show word detail modal
+  function showWordDetail(vocabItem) {
+    const modal = document.getElementById('modalWordDetail');
+    const title = document.getElementById('detailWordTitle');
+    const content = document.getElementById('detailWordContent');
+    
+    title.textContent = vocabItem.word;
+    
+    const hist = historyMap.get(vocabItem.word.toLowerCase());
+    
+    let html = `
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div>
+          <div style="font-size:32px;font-weight:700;margin-bottom:8px;">
+            ${escapeHtml(vocabItem.word)}
+            ${vocabItem.ipa ? `<span style="color:var(--text-secondary);font-size:20px;font-weight:400;margin-left:8px;">${escapeHtml(vocabItem.ipa)}</span>` : ''}
+          </div>
+          <span class="tag ${vocabItem.type}">${typeLabels[vocabItem.type]}</span>
+          ${vocabItem.level ? `<span class="badge" style="margin-left:8px;">Level ${escapeHtml(vocabItem.level)}</span>` : ''}
+          ${vocabItem.source === 'user' ? `<span class="badge" style="margin-left:8px;background:var(--primary);">Custom</span>` : ''}
+        </div>
+        
+        <div style="border-top:1px solid var(--border);padding-top:16px;">
+          <div style="font-weight:600;color:var(--text-secondary);font-size:12px;text-transform:uppercase;margin-bottom:8px;">Arti</div>
+          <div style="font-size:16px;line-height:1.6;">${escapeHtml(vocabItem.meaning)}</div>
+        </div>
+        
+        ${vocabItem.example ? `
+        <div style="border-top:1px solid var(--border);padding-top:16px;">
+          <div style="font-weight:600;color:var(--text-secondary);font-size:12px;text-transform:uppercase;margin-bottom:8px;">Contoh Kalimat</div>
+          <div style="font-size:14px;font-style:italic;color:var(--text-secondary);line-height:1.6;">${escapeHtml(vocabItem.example)}</div>
+        </div>
+        ` : ''}
+        
+        ${hist ? `
+        <div style="border-top:1px solid var(--border);padding-top:16px;">
+          <div style="font-weight:600;color:var(--text-secondary);font-size:12px;text-transform:uppercase;margin-bottom:12px;">Riwayat Belajar</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <div style="font-size:12px;color:var(--text-secondary);">Terakhir Dipelajari</div>
+              <div style="font-size:14px;font-weight:600;">${escapeHtml(vocabItem.last)}</div>
+            </div>
+            <div>
+              <div style="font-size:12px;color:var(--text-secondary);">Review Berikutnya</div>
+              <div style="font-size:14px;font-weight:600;">${escapeHtml(vocabItem.next)}</div>
+            </div>
+          </div>
+          <div style="margin-top:12px;">
+            <div style="font-size:12px;color:var(--text-secondary);">Jumlah Review</div>
+            <div style="font-size:14px;font-weight:600;">${hist.reviewCount || 1} kali</div>
+          </div>
+        </div>
+        ` : `
+        <div style="border-top:1px solid var(--border);padding-top:16px;">
+          <div style="padding:12px;background:var(--bg-secondary);border-radius:6px;text-align:center;color:var(--text-secondary);font-size:14px;">
+            Belum pernah dipelajari. Mulai belajar di Flashcard!
+          </div>
+        </div>
+        `}
+        
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="btn btn-primary" onclick="speakWord('${escapeHtml(vocabItem.word)}')" style="flex:1;">
+            <svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>
+            Dengarkan
+          </button>
+          <a href="flashcard.html" class="btn btn-outline" style="flex:1;">
+            <svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><rect x="3" y="4" width="14" height="16" rx="2"/><path d="M17 8h4v12H7"/></svg>
+            Belajar
+          </a>
+        </div>
+      </div>
+    `;
+    
+    content.innerHTML = html;
+    modal.classList.add('open');
+  }
+  
+  // Speak word function (global so onclick can access it)
+  window.speakWord = function(word) {
+    if (!window.Englisify.isSoundEnabled()) {
+      window.Englisify.toast('Efek suara dimatikan — aktifkan lagi di Pengaturan');
+      return;
+    }
+    try {
+      const u = new SpeechSynthesisUtterance(word);
+      u.lang = 'en-US';
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    } catch (e) {
+      window.Englisify.toast('Audio tidak tersedia di perangkat ini');
+    }
+  };
 
   // Tabs
   document.querySelectorAll('#vocabTabs .tab-btn').forEach((tab) => {
@@ -357,9 +445,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Add-word modal - saves to localStorage
   const overlay = document.getElementById('modalOverlay');
+  const detailModal = document.getElementById('modalWordDetail');
+  
   document.getElementById('btnAddWord').addEventListener('click', () => overlay.classList.add('open'));
   document.getElementById('btnCancelAdd').addEventListener('click', () => overlay.classList.remove('open'));
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('open'); });
+
+  // Detail modal handlers
+  document.getElementById('btnCloseDetail').addEventListener('click', () => detailModal.classList.remove('open'));
+  detailModal.addEventListener('click', (e) => { if (e.target === detailModal) detailModal.classList.remove('open'); });
 
   document.getElementById('addWordForm').addEventListener('submit', async (e) => {
     e.preventDefault();

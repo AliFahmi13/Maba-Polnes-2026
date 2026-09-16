@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* ---------- Step 4: result ---------- */
-  function showExamResult() {
+  async function showExamResult() {
     const examQuestions = getExamQuestions();
     const categories = ['Kosakata', 'Tata Bahasa', 'Membaca'];
     const catScore = {};
@@ -198,9 +198,36 @@ document.addEventListener('DOMContentLoaded', () => {
       window.Englisify.accountStore.set(`ujian-${activeLevel}-completed`, 'true');
       window.Englisify.accountStore.set(`ujian-${activeLevel}-score`, String(percent));
       
+      // Save to Supabase
+      try {
+        await window.EnglisifySupabase.markLevelComplete(activeLevel, 'ujian', percent);
+        
+        // Record activity
+        await window.EnglisifySupabase.recordActivity(
+          'ujian',
+          `Menyelesaikan Ujian Level ${activeLevel}`,
+          `Skor: ${percent}% - ${passed ? 'LULUS' : 'BELUM LULUS'}`,
+          activeLevel
+        );
+      } catch (error) {
+        console.error('Failed to save completion to Supabase:', error);
+      }
+      
       // Unlock next level
       if (meta.next) {
         window.Englisify.accountStore.set(`ujian-${meta.next}-unlocked`, 'true');
+      }
+    } else {
+      // Record attempt even if failed
+      try {
+        await window.EnglisifySupabase.recordActivity(
+          'ujian',
+          `Mencoba Ujian Level ${activeLevel}`,
+          `Skor: ${percent}% - Belum Lulus`,
+          activeLevel
+        );
+      } catch (error) {
+        console.error('Failed to record activity:', error);
       }
     }
     
