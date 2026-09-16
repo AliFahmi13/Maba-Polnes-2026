@@ -153,20 +153,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const lockIcon = '<svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>';
 
   function renderLevelGrid() {
-    levelGrid.innerHTML = LEVELS.map((lv) => {
+    levelGrid.innerHTML = LEVELS.map((lv, index) => {
       const cls = ['card', 'level-card'];
-      if (lv.state === 'locked') cls.push('locked');
+      
+      // Check if level is unlocked
+      const isUnlocked = index === 0 || window.Englisify.accountStore.get(`reading-test-${lv.code}-unlocked`) === 'true';
+      const isCompleted = window.Englisify.accountStore.get(`reading-test-${lv.code}-completed`) === 'true';
+      
+      if (!isUnlocked) cls.push('locked');
       if (lv.code === selectedLevel) cls.push('selected');
-      const badgeContent = lv.state === 'locked' ? lockIcon : lv.code;
+      
+      const badgeContent = !isUnlocked ? lockIcon : (isCompleted ? '✓' : lv.code);
+      const state = !isUnlocked ? 'locked' : (isCompleted ? 'done' : 'current');
+      
       return (
-        '<div class="' + cls.join(' ') + '" data-code="' + lv.code + '" data-state="' + lv.state + '">' +
+        '<div class="' + cls.join(' ') + '" data-code="' + lv.code + '" data-state="' + state + '">' +
           '<div class="lv-top"><div class="lv-badge">' + badgeContent + '</div></div>' +
           '<div class="lv-title">' + lv.code + ' &middot; ' + lv.name + '</div>' +
           '<div class="lv-desc">' + lv.desc + '</div>' +
         '</div>'
       );
     }).join('');
-
   }
 
   levelGrid.addEventListener('click', (event) => {
@@ -302,13 +309,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const circumference = 2 * Math.PI * 60;
     const offset = circumference - (percent / 100) * circumference;
 
+    // Save completion and unlock next level if passed
+    if (passed) {
+      const completionKey = `reading-test-${selectedLevel}-completed`;
+      window.Englisify.accountStore.set(completionKey, 'true');
+      window.Englisify.accountStore.set(`reading-test-${selectedLevel}-score`, String(percent));
+      
+      // Find and unlock next level
+      const currentIndex = LEVELS.findIndex(lv => lv.code === selectedLevel);
+      if (currentIndex !== -1 && currentIndex < LEVELS.length - 1) {
+        const nextLevel = LEVELS[currentIndex + 1];
+        const nextLevelUnlockKey = `reading-test-${nextLevel.code}-unlocked`;
+        window.Englisify.accountStore.set(nextLevelUnlockKey, 'true');
+      }
+    }
+
+    const currentIndex = LEVELS.findIndex(lv => lv.code === selectedLevel);
+    const hasNextLevel = currentIndex !== -1 && currentIndex < LEVELS.length - 1;
+    const nextLevelCode = hasNextLevel ? LEVELS[currentIndex + 1].code : null;
+
     resultStage.innerHTML =
       '<div class="score-ring"><svg viewBox="0 0 140 140">' +
         '<circle cx="70" cy="70" r="60" stroke="var(--border-color)" stroke-width="12" fill="none"/>' +
         '<circle cx="70" cy="70" r="60" stroke="' + (passed ? '#12b76a' : '#ef4444') + '" stroke-width="12" fill="none" stroke-linecap="round" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '"/>' +
       '</svg><div class="score-text">' + percent + '<small>dari 100</small></div></div>' +
-      '<h2 style="font-size:19px;font-weight:700;margin-bottom:6px;">' + (passed ? 'Kerja bagus! \ud83c\udf89' : 'Ayo coba lagi!') + '</h2>' +
+      '<h2 style="font-size:19px;font-weight:700;margin-bottom:6px;">' + (passed ? 'Kerja bagus! 🎉' : 'Ayo coba lagi!') + '</h2>' +
       '<p style="color:var(--text-secondary);font-size:14px;">Kamu menjawab benar ' + score + ' dari ' + sessionQuestions.length + ' soal.</p>' +
+      (passed && nextLevelCode ? '<p style="color:#12b76a;font-weight:600;margin-top:8px;">Level ' + nextLevelCode + ' telah dibuka!</p>' : '') +
       '<div class="result-breakdown">' +
         sessionQuestions.map((q, i) =>
           '<div class="result-row"><span>Soal ' + (i + 1) + '</span><span class="val" style="color:' + (userCorrectFlags[i] ? '#12b76a' : '#ef4444') + '">' + (userCorrectFlags[i] ? 'Benar' : 'Salah') + '</span></div>'
@@ -316,15 +343,28 @@ document.addEventListener('DOMContentLoaded', () => {
       '</div>' +
       '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px;">' +
         '<button class="btn btn-outline" id="btnRetry">Ulangi Level Ini</button>' +
+        (passed && nextLevelCode ? '<button class="btn btn-primary" id="btnNextLevel">Lanjut ke ' + nextLevelCode + ' →</button>' : '') +
         '<button class="btn btn-outline" id="btnChooseAnother">Pilih Level Lain</button>' +
-        '<a href="beranda.html" class="btn btn-primary">Kembali ke Beranda</a>' +
+        '<a href="beranda.html" class="btn btn-outline">Kembali ke Beranda</a>' +
       '</div>';
 
     el('btnRetry').addEventListener('click', () => beginSession(selectedLevel));
     el('btnChooseAnother').addEventListener('click', () => {
+      // Re-render grid to show unlocked levels
+      renderLevelGrid();
       stepReading.classList.add('hidden');
       stepLevel.classList.remove('hidden');
     });
+    
+    if (passed && nextLevelCode) {
+      const btnNext = el('btnNextLevel');
+      if (btnNext) {
+        btnNext.addEventListener('click', () => {
+          selectedLevel = nextLevelCode;
+          beginSession(nextLevelCode);
+        });
+      }
+    }
   }
 
   renderLevelGrid();

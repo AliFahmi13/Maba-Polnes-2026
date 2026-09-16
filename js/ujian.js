@@ -45,14 +45,22 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ---------- Step 1: level grid ---------- */
   function renderLevelGrid() {
     const grid = document.getElementById('levelGrid');
-    grid.innerHTML = levels.map((lv) => {
+    grid.innerHTML = levels.map((lv, index) => {
       const cls = ['card', 'level-card'];
-      if (lv.state === 'locked') cls.push('locked');
-      const badgeIcon = lv.state === 'locked'
+      
+      // Check if level is unlocked
+      const isUnlocked = index === 0 || window.Englisify.accountStore.get(`ujian-${lv.code}-unlocked`) === 'true';
+      const isCompleted = window.Englisify.accountStore.get(`ujian-${lv.code}-completed`) === 'true';
+      
+      if (!isUnlocked) cls.push('locked');
+      
+      const badgeIcon = !isUnlocked
         ? `<svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>`
-        : lv.code;
+        : (isCompleted ? '✓' : lv.code);
+      const state = !isUnlocked ? 'locked' : (isCompleted ? 'done' : 'current');
+      
       return `
-        <div class="${cls.join(' ')}" data-code="${lv.code}" data-state="${lv.state}">
+        <div class="${cls.join(' ')}" data-code="${lv.code}" data-state="${state}">
           <div class="lv-top">
             <div class="lv-badge">${badgeIcon}</div>
           </div>
@@ -60,7 +68,6 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="lv-desc">${lv.desc}</div>
         </div>`;
     }).join('');
-
   }
 
   document.getElementById('levelGrid').addEventListener('click', (event) => {
@@ -185,6 +192,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const percent = Math.round((totalCorrect / examQuestions.length) * 100);
     const meta = examMeta[activeLevel];
     const passed = percent >= meta.pass;
+    
+    // Save completion and unlock next level if passed
+    if (passed) {
+      window.Englisify.accountStore.set(`ujian-${activeLevel}-completed`, 'true');
+      window.Englisify.accountStore.set(`ujian-${activeLevel}-score`, String(percent));
+      
+      // Unlock next level
+      if (meta.next) {
+        window.Englisify.accountStore.set(`ujian-${meta.next}-unlocked`, 'true');
+      }
+    }
+    
     const circumference = 2 * Math.PI * 60;
     const offset = circumference - (percent / 100) * circumference;
 
@@ -236,10 +255,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const nextBtn = document.getElementById('btnNextLevel');
     if (nextBtn) {
       nextBtn.addEventListener('click', () => {
-        levels = window.Englisify.unlockNextLevel(activeLevel);
         window.Englisify.toast(`Level ${meta.next} telah dibuka!`);
+        activeLevel = meta.next;
         renderLevelGrid();
-        showStep(stepSelect);
+        renderIntro();
+        showStep(stepIntro);
       });
     }
     const retryBtn = document.getElementById('btnRetryExam');
