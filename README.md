@@ -2,6 +2,8 @@
 
 **Englisify** adalah aplikasi web untuk membantu mahasiswa baru (Maba) belajar Bahasa Inggris secara mandiri, bertahap dari level pemula (A1) sampai mahir (C2) mengikuti standar CEFR. Dibangun sebagai website statis (HTML, CSS, JavaScript vanilla) dengan [Supabase](https://supabase.com) sebagai backend (autentikasi & database).
 
+🔗 **Live Demo:** [alifahmi13.github.io/Maba-Polnes-2026](https://alifahmi13.github.io/Maba-Polnes-2026/)
+
 ## ✨ Fitur
 
 - **Autentikasi** — Registrasi & login pengguna via Supabase Auth (`login.html`, `register.html`).
@@ -56,7 +58,17 @@ Maba-Polnes-2026/
 └── *.md                        # Catatan pengembangan (lihat bagian Dokumentasi)
 ```
 
-## 🚀 Menjalankan Secara Lokal
+## 🚀 Menjalankan Project
+
+### Opsi 1 — Langsung Coba via GitHub Pages (tanpa install apa pun)
+
+Project ini sudah di-hosting dan bisa langsung diakses di:
+
+👉 **https://alifahmi13.github.io/Maba-Polnes-2026/**
+
+Buka link di atas dari browser, lalu register/login untuk mulai belajar.
+
+### Opsi 2 — Menjalankan Secara Lokal
 
 Karena ini website statis, cukup buka dengan live server, contoh:
 
